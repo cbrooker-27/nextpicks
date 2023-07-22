@@ -8,6 +8,10 @@
   padding: 0 10%;
 }
 
+.header img {
+  display:inline-flex;
+}
+
 .header ul {
   list-style: none;
   display: flex;
@@ -23,6 +27,7 @@
 .header a {
   color: var(--color-grey-100);
   font-size: var(--size-4);
+  display: inline-flex;
 }
 
 .header a:hover,
