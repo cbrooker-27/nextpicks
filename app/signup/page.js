@@ -8,7 +8,7 @@ import classes from './page.module.css';
 
 async function createUser(name, password) {
     console.log('name:'+name)
-  const response = await fetch('/api/picks/auth/signup', {
+  const response = await fetch('/api/picks/signup', {
     method: 'POST',
     body: JSON.stringify({ name, password }),
     headers: {
@@ -44,12 +44,13 @@ function SignUp() {
     // optional: Add validation
 
     if (isLogin) {
+      console.log("attempting sign-in")
       const result = await signIn('credentials', {
         redirect: false,
         name: enteredName,
         password: enteredPassword,
       });
-
+      console.log(result)
     } else {
       try {
         const result = await createUser(enteredName, enteredPassword);
