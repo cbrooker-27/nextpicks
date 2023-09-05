@@ -30,7 +30,7 @@ function MainNavigation() {
           <li>
             <Link href="/xmas">Xmas</Link>
           </li>
-          {!loggedIn&&<li><Link href="/signup">Login</Link></li>}
+          {!loggedIn&&<li><Link href="/login">Login</Link></li>}
           {loggedIn&&<li><button onClick={logoutHandler} >Logout</button></li>}
           
         </ul>
