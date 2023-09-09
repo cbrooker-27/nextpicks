@@ -1,0 +1,44 @@
+.gametile{
+    border-radius: 8px;
+    border-style: solid;
+    border-color: blue;
+    border-width: 3;
+    margin: 5px;
+    width: 500px;
+    background-color: black;
+    color: white;
+}
+
+.gameid {
+    font-size: small;
+    display: inline-block;
+    color: azure;
+}
+
+.teams {
+    background-color: inherit;
+    
+}
+
+.spread {
+    display: inline-block;
+}
+.spread input{ 
+    width: 35px;
+}
+
+.gameteam {
+    display: inline-block;
+    width: 200px;
+    height: 225px;
+    background-size: 200px;
+    background-repeat: no-repeat;
+    background-position: bottom;
+    color: white;
+}
+
+.gamelocation {
+    font-size: small;
+    text-align: center;
+    color: greenyellow;
+}

@@ -1,0 +1,15 @@
+.team {
+    display: inline-block;
+    width: 200px;
+    height: 225px;
+    background-size: 200px;
+    background-repeat: no-repeat;
+    background-position: top;
+    color: white;
+}
+
+.teamname{
+    vertical-align: bottom;
+    text-align: center;
+}
+
