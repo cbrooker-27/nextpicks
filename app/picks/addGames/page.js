@@ -1,34 +1,11 @@
 import GameTile from "./gameTile";
+import { getThisWeeksGames } from "@/lib/msf";
 
 export default async function AddGames(){
 
-    function findTeam(team){
-        return team.abbreviation === this
-    }
-
-    //const msfUrl = "https://api.mysportsfeeds.com/v2.1/pull/nfl/"+getSeason()+"-regular/week/" + getWeek() + "/games.json"
-    const msfUrl = "https://api.mysportsfeeds.com/v2.1/pull/nfl/2023-2024-regular/week/1/games.json"
-    const headers = new Headers();
-    console.log(process.env.MYSPORTSFEED_CREDS);
-    headers.append("Authorization",'Basic '+ Buffer.from(""+process.env.MYSPORTSFEED_CREDS).toString('base64'));
-    console.log(headers)
-    const response = await fetch(msfUrl,{method:'GET', headers:headers})
-    console.log(response)
-    const resJson = await response.json()
-    const games = resJson.games;
-    const teams = resJson.references.teamReferences;
-    const simpleGames = games.map(game=>
-        {
-            return {
-                "id": game.schedule.id,
-                "week" : game.schedule.week,
-                "away" : teams.find(findTeam,game.schedule.awayTeam.abbreviation),
-                "home" : teams.find(findTeam,game.schedule.homeTeam.abbreviation),
-                "location" : game.schedule.venue.name
-            }
-        })
+    const simpleGames = await getThisWeeksGames()
     
-    return (<div style={{align: "center"}}>Adding Games
+    return (<div><h1>Add Games</h1>
         {simpleGames.map(game=><GameTile game={game}/>)}
     </div>)
     
