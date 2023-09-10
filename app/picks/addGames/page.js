@@ -42,6 +42,3 @@ export default function AddGames() {
   );
 }
 
-export async function getServerSideProps(){
-
-}
