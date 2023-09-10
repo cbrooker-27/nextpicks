@@ -10,8 +10,8 @@ export default function GameTile(props) {
         Week #{game.week} <p className={cssStyles.gameid}>{game.id}</p>
       </div>
       <div className={cssStyles.teams}>
-        <TeamTile team={game.home}/>
-        <div className={cssStyles.spread}><input type="number"></input></div>
+        <TeamTile team={game.home} home/>
+        <div className={cssStyles.spread}><input type="number" onChange={props.spreadUpdated}></input></div>
         <TeamTile team={game.away}/>
       </div>
       <div className={cssStyles.gamelocation}>{game.location}</div>

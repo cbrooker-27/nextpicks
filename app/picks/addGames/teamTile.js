@@ -10,6 +10,8 @@ export default function TeamTile(props){
         }}
       >
        <div className={cssStyles.teamname}>{team.city} {team.name}</div> 
+       {props.home && <p>HOME</p> }
+       {!props.home && <p>AWAY</p> }
       </div>
     )
 }
