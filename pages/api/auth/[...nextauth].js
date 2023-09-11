@@ -9,12 +9,9 @@ export const authOptions = {
   providers: [
     CredentialsProvider({
       async authorize(credentials) {
-        console.log('got here 1:'+credentials.name)
         const client = await connectToDatabase();
         const usersCollection=client.db().collection("users");
-        console.log('got here 2'+usersCollection)
         const user = await usersCollection.findOne({ name: credentials.name });
-        console.log('got here 3'+user)
         if (!user) {
           console.log('bad user')
           client.close();
