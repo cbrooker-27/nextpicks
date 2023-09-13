@@ -1,5 +1,5 @@
 "use client";
-import GameTile from "./gameTile";
+import GameTile from "../../../components/games/gameTile";
 import { createContext, useContext, useState, useEffect } from "react";
 
 export default function AddGames() {

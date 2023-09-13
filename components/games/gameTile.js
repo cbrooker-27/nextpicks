@@ -1,5 +1,5 @@
 import cssStyles from "./gameTile.module.css";
-import TeamTile from "./teamTile";
+import TeamTile from "../teams/teamTile";
 
 export default function GameTile(props) {
   const game = props.game;
