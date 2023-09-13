@@ -8,7 +8,7 @@ export default function AddGames() {
   const [readyToSubmit, setReadyToSubmit] = useState(false);
 
   useEffect(() => {
-    fetch("/api/picks/games")
+    fetch("/api/picks/games/add")
       .then((res) => res.json())
       .then((data) => {
         setGames(data);
