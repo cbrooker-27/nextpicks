@@ -9,12 +9,12 @@ export default function MakePicks(){
     function submitClicked(){
         console.log('submit clicked')
     }
-
+    /* On load, go get games from our database */
     useEffect(() => {
         fetch("/api/picks/games/picks")
           .then((res) => res.json())
           .then((data) => {
-            //console.log(data)
+            /* Update states to redraw */
             setGames(data.games);
             setLoading(false);
           });
