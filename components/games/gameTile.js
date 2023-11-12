@@ -7,7 +7,7 @@ export default function GameTile(props) {
   return (
     <div className={cssStyles.gametile}>
       <div className={cssStyles.gameinfo}>
-        Week #{game.week} <p className={cssStyles.gameid}>{game.id}</p>
+        Week #{game.week} <p className={cssStyles.gameid}>{game._id}</p>
       </div>
       <div className={cssStyles.teams}>
         <TeamTile team={game.home} home />

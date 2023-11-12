@@ -12,7 +12,7 @@ export default function PickableGameTile(props) {
         <div className={cssStyles.gameteam}><TeamTile className={cssStyles.gameteam} team={game.away} /></div>
       </div>
       <div className={cssStyles.gamefooter}>
-        {game.location} - <p className={cssStyles.gameid}>{game.id}</p>
+        {game.location} - <p className={cssStyles.gameid}>{game._id}</p>
       </div>
     </div>
   );
