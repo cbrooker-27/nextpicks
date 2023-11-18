@@ -8,6 +8,7 @@
     background-color: black;
     color: white;
     display: inline-block;
+    
 }
 
 .gameid {
@@ -23,9 +24,10 @@
 
 .spread {
     display: inline-block;
+    vertical-align: middle;
 }
 .spread input{ 
-    width: 35px;
+    width: 3rem;
 }
 
 .gameteam {

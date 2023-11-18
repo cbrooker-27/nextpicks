@@ -3,6 +3,8 @@ import TeamTile from "../teams/teamTile";
 
 export default function GameTile(props) {
   const game = props.game;
+  const startTime = new Date(game.startTime)
+
 
   return (
     <div className={cssStyles.gametile}>
@@ -16,7 +18,7 @@ export default function GameTile(props) {
         </div>
         <TeamTile team={game.away} />
       </div>
-      <div className={cssStyles.gamelocation}>{game.location}</div>
+      <div className={cssStyles.gamelocation}>{game.location} - {startTime.toLocaleDateString() + " - "+startTime.toLocaleTimeString()}</div>
     </div>
   );
 }
