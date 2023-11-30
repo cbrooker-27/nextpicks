@@ -1,5 +1,8 @@
 import cssStyles from "./gameTile.module.css";
 import TeamTile from "../teams/teamTile";
+import { Switch } from "@mui/material";
+import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 export default function GameTile(props) {
   const game = props.game;
@@ -15,10 +18,19 @@ export default function GameTile(props) {
         <TeamTile team={game.home} home />
         <div className={cssStyles.spread}>
           <input type="number" onChange={event => props.spreadUpdated(props.index, event)}></input>
+          <FormGroup>
+          <FormControlLabel  value="top"
+          control={<Switch color="primary" className={cssStyles.favoriteToggle}/>}
+          label="Favorite"
+          labelPlacement="top"
+          />
+          </FormGroup>
         </div>
+        
         <TeamTile team={game.away} />
       </div>
       <div className={cssStyles.gamelocation}>{game.location} - {startTime.toLocaleDateString() + " - "+startTime.toLocaleTimeString()}</div>
+      
     </div>
   );
 }
