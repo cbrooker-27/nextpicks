@@ -5,7 +5,7 @@ export default function SignIn() {
     <form
       action={async () => {
         "use server"
-        await signIn("google")
+        await signIn("google", undefined,{prompt: "select_account"})
       }}
     >
       <button type="submit">Sign In</button>
