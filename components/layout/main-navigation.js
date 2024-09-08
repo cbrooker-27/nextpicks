@@ -1,20 +1,18 @@
-'use client'
 import Link from "next/link";
 import Image from "next/image";
-import { useSession, signOut } from "next-auth/react";
+import SignIn from "../sign-in";
+import SignOut from "../sign-out";
+import {auth} from "@/auth"
 
 import Logo from "./logo";
 import classes from "./main-navigation.module.css";
 
-function MainNavigation() {
-  const {data: session, status} = useSession();
+async function MainNavigation() {
 
-  function logoutHandler(){
-    signOut();
-  }
+  const session = await auth();
 
-  const loggedIn = status==="authenticated"
-  console.log('loggedIn='+loggedIn)
+  const loggedIn = session!=null
+
   return (
     <header className={classes.header}>
       <Link href="/">
@@ -30,9 +28,8 @@ function MainNavigation() {
           <li>
             <Link href="/xmas">Xmas</Link>
           </li>
-          {!loggedIn&&<li><Link href="/login">Login</Link></li>}
-          {loggedIn&&<li><button onClick={logoutHandler} >Logout</button></li>}
-          
+          {!loggedIn&&<li><SignIn/></li>}
+          {loggedIn&&<li><SignOut/></li>}
         </ul>
       </nav>
     </header>
