@@ -7,13 +7,13 @@ import Logo from "./logo";
 import classes from "./main-navigation.module.css";
 
 function MainNavigation() {
-  const {data: session, status} = useSession();
+ // const {data: session, status} = useSession();
 
   function logoutHandler(){
     signOut();
   }
 
-  const loggedIn = status==="authenticated"
+  const loggedIn = false //s==="authenticated"
   console.log('loggedIn='+loggedIn)
   return (
     <header className={classes.header}>

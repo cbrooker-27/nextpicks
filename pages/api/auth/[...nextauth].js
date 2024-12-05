@@ -1,12 +1,14 @@
 import { connectToDatabase } from "@/lib/db";
 import NextAuth from "next-auth";
+import Google from "next-auth/providers/google"
+
 import { verifyPassword } from "@/lib/auth";
 
 import CredentialsProvider from "next-auth/providers/credentials";
 
 export const authOptions = {
   session: {jwt:true},
-  providers: [
+  providers: [Google,
     CredentialsProvider({
       async authorize(credentials) {
         const client = await connectToDatabase();

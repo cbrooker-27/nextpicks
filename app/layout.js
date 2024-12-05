@@ -1,6 +1,6 @@
 import "../styles/globals.css";
 import MainNavigation from "@/components/layout/main-navigation";
-import MySessionProvider from "./mySessionProvider";
+//import MySessionProvider from "./mySessionProvider";
 import Footer from "@/components/layout/footer";
 
 export const metadata = {
@@ -18,12 +18,14 @@ export default function RootLayout({ session, children }) {
   return (
     <html lang="en">
       <body>
-        <MySessionProvider session={session}>
+        {//<MySessionProvider session={session}>
+        }
           <MainNavigation />
           <main style={{ marginTop: "100px", marginBottom: "33px"}}>{children}</main>
           <div id="notifications"></div>
           <Footer />
-        </MySessionProvider>
+{//</body></MySessionProvider>
+}
       </body>
     </html>
   );
