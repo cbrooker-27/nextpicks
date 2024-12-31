@@ -48,7 +48,7 @@ function ResponsiveDrawer(props) {
         <ListItem disablePadding>
           <ListItemButton
             onClick={() => {
-              router.push("makePicks");
+              router.push("/picks/makePicks");
             }}
           >
             <ListItemIcon>
@@ -63,7 +63,7 @@ function ResponsiveDrawer(props) {
         <ListItem disablePadding>
           <ListItemButton
             onClick={() => {
-              router.push("addGames");
+              router.push("/picks/addGames");
             }}
           >
             <ListItemIcon>
