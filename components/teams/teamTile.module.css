@@ -8,8 +8,8 @@
     flex-direction: column;
     justify-content: space-between;
     width: 200px;
-    height: 275px;
-    background-size: 200px;
+    height: 225px;
+    background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
     color: white;
