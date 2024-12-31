@@ -9,14 +9,21 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@auth/mongodb-adapter": "^3.7.4",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@mui/material": "^5.14.18",
     "bcryptjs": "^2.4.3",
-    "mongodb": "^6.0.0",
+    "mongodb": "^6.12.0",
     "next": "latest",
     "next-auth": "^5.0.0-beta.20",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "eslint": "9.17.0",
+    "eslint-config-next": "15.1.0"
   }
 }

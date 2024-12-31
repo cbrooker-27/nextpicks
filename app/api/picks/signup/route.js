@@ -1,13 +1,11 @@
-import { connectToDatabase } from "@/lib/db";
+import { connectToDatabase } from "@/utils/db";
 import { hashPassword } from "@/lib/auth";
 import { NextResponse } from "next/server";
-
-
 
 export async function POST(request) {
   const requestData = await request.json();
   //console.log("request body:"+requestData.name)
-  
+
   const userName = requestData.name;
   const userPwd = await hashPassword(requestData.password);
   const client = await connectToDatabase();

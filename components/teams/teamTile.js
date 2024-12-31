@@ -1,7 +1,6 @@
 import cssStyles from "./teamTile.module.css";
 
-export default function TeamTile(props) {
-  const team = props.team;
+export default function TeamTile({ team, home }) {
   return (
     <div className={cssStyles.teamContainer}>
       <div
@@ -14,8 +13,7 @@ export default function TeamTile(props) {
           {team.city} {team.name}
         </div>
         <div className={cssStyles.homeAway}>
-          {props.home && <div>HOME</div>}
-          {!props.home && <div>AWAY</div>}
+          <div>{home ? "HOME" : "AWAY"}</div>
         </div>
       </div>
     </div>
