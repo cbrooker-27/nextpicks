@@ -4,7 +4,7 @@
     border-color: blue;
     border-width: 3px;
     margin: 5px;
-    width: 500px;
+    width: 475px;
     height: 400px;
     background-color: black;
     color: white;
@@ -12,7 +12,7 @@
 }
 
 .gamemain {
-    height: 205px;
+    height: 235px;
 }
 
 .gameid {
@@ -32,6 +32,8 @@
     vertical-align: middle;
 }
 
+.choices { display: block; width: 100%}
+.choice { color: white; justify-content: left; width: 100%}
 
 .gameteam {
     display: inline-block;
