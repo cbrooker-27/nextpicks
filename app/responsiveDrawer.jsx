@@ -17,7 +17,7 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { Avatar, ListItemAvatar, ListSubheader, Skeleton } from "@mui/material";
 
 const drawerWidth = 240;
@@ -58,7 +58,7 @@ export default function ResponsiveDrawer(props) {
           <ListItem disablePadding>
             <ListItemButton
               onClick={() => {
-                loggedIn ? router.push("/signout") : router.push("/login");
+                loggedIn ? signOut() : signIn();
               }}
             >
               <ListItemAvatar>

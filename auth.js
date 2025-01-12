@@ -7,6 +7,7 @@ import { signInSchema } from "./lib/zod";
 // Your own logic for dealing with plaintext password strings; be careful!
 import { saltAndHashPassword } from "@/utils/password";
 import { getUserFromDb } from "@/utils/db";
+import { ZodError } from "zod";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { jwt: true },
@@ -14,7 +15,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Google({ allowDangerousEmailAccountLinking: true }),
     Credentials({
-      credentials: { username: {}, password: {} },
+      credentials: { username: {}, password: { type: "password" } },
       authorize: async (credentials) => {
         try {
           let user = null;

@@ -18,9 +18,11 @@ export default function Layout({ session, children }) {
     <html lang="en">
       <body>
         <MySessionProvider session={session}>
-          <ResponsiveDrawer>{children}</ResponsiveDrawer>
-          <div id="notifications"></div>
-          <Footer />
+          <ResponsiveDrawer>
+            {children}
+            <div id="notifications"></div>
+            <Footer />
+          </ResponsiveDrawer>
         </MySessionProvider>
       </body>
     </html>
