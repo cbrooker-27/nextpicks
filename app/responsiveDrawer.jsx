@@ -15,15 +15,18 @@ import MailIcon from "@mui/icons-material/Mail";
 import MenuIcon from "@mui/icons-material/Menu";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
-import * as React from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { Avatar, ListItemAvatar, ListSubheader, Skeleton } from "@mui/material";
 
 const drawerWidth = 240;
 
-function ResponsiveDrawer(props) {
-  const [mobileOpen, setMobileOpen] = React.useState(false);
-  const [isClosing, setIsClosing] = React.useState(false);
+export default function ResponsiveDrawer(props) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   const handleDrawerClose = () => {
     setIsClosing(true);
@@ -40,11 +43,36 @@ function ResponsiveDrawer(props) {
     }
   };
 
+  const loggedIn = session != null;
+  console.log("status", status);
+  const userName = loggedIn ? session.user.name : "Guest";
+
   const drawer = (
     <div>
       <Toolbar />
       <Divider />
       <List>
+        {status === "loading" ? (
+          <Skeleton></Skeleton>
+        ) : (
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={() => {
+                loggedIn ? router.push("/signout") : router.push("/login");
+              }}
+            >
+              <ListItemAvatar>
+                <Avatar />
+              </ListItemAvatar>
+              <ListItemText
+                primary={`Welcome ${userName}`}
+                secondary={loggedIn ? "Sign Out" : "Sign In"}
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
+
+        <ListSubheader>Picks</ListSubheader>
         <ListItem disablePadding>
           <ListItemButton
             onClick={() => {
@@ -57,9 +85,6 @@ function ResponsiveDrawer(props) {
             <ListItemText primary="Make Picks" />
           </ListItemButton>
         </ListItem>
-      </List>
-      <Divider />
-      <List>
         <ListItem disablePadding>
           <ListItemButton
             onClick={() => {
@@ -72,6 +97,8 @@ function ResponsiveDrawer(props) {
             <ListItemText primary="Add Games" />
           </ListItemButton>
         </ListItem>
+        <ListSubheader>Admin</ListSubheader>
+        <ListSubheader>Family</ListSubheader>
       </List>
     </div>
   );
@@ -97,7 +124,7 @@ function ResponsiveDrawer(props) {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
-            Responsive drawer
+            ChrisBrooker.com
           </Typography>
         </Toolbar>
       </AppBar>
@@ -151,13 +178,5 @@ function ResponsiveDrawer(props) {
         {props.children}
       </Box>
     </Box>
-  );
-}
-
-export default function PicksLayout({ session, children }) {
-  return (
-    <>
-      <ResponsiveDrawer>{children}</ResponsiveDrawer>
-    </>
   );
 }
