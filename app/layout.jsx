@@ -1,7 +1,6 @@
-import "../styles/globals.css";
-import MainNavigation from "@/components/layout/main-navigation";
-import MySessionProvider from "./mySessionProvider";
+import ResponsiveDrawer from "./responsiveDrawer";
 import Footer from "@/components/layout/footer";
+import MySessionProvider from "./mySessionProvider";
 
 export const metadata = {
   title: "ChrisBrooker.com",
@@ -14,17 +13,16 @@ export const viewport = {
   maximumScale: 1,
 };
 
-export default function RootLayout({ session, children }) {
+export default function Layout({ session, children }) {
   return (
     <html lang="en">
       <body>
         <MySessionProvider session={session}>
-          <MainNavigation />
-          <main style={{ marginTop: "100px", marginBottom: "33px" }}>
+          <ResponsiveDrawer>
             {children}
-          </main>
-          <div id="notifications"></div>
-          <Footer />
+            <div id="notifications"></div>
+            <Footer />
+          </ResponsiveDrawer>
         </MySessionProvider>
       </body>
     </html>

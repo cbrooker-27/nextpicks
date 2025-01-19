@@ -1,5 +1,5 @@
 import { connectToDatabase } from "@/utils/db";
-import { hashPassword } from "@/lib/auth";
+import { saltAndHashPassword } from "@/utils/password";
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
@@ -7,7 +7,7 @@ export async function POST(request) {
   //console.log("request body:"+requestData.name)
 
   const userName = requestData.name;
-  const userPwd = await hashPassword(requestData.password);
+  const userPwd = await saltAndHashPassword(requestData.password);
   const client = await connectToDatabase();
   const db = client.db("picks");
   const insertResult = await db

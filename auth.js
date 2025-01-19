@@ -6,15 +6,36 @@ import client from "./lib/db";
 import { signInSchema } from "./lib/zod";
 // Your own logic for dealing with plaintext password strings; be careful!
 import { saltAndHashPassword } from "@/utils/password";
-import { getUserFromDb } from "@/utils/db";
+import { getUserFromDb, getUserFromDbWithEmail, updateUser } from "@/utils/db";
+import { ZodError } from "zod";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { jwt: true },
   adapter: MongoDBAdapter(client),
+  callbacks: {
+    async signIn(props) {
+      const user = await getUserFromDbWithEmail(props.user.email);
+      if (!user) {
+        return false;
+      }
+
+      if (!user.image) {
+        user.image = props.user.image;
+        await updateUser(user);
+      }
+
+      return true;
+    },
+  },
   providers: [
-    Google({ allowDangerousEmailAccountLinking: true }),
+    Google({
+      allowDangerousEmailAccountLinking: true,
+      authorization: {
+        params: { prompt: "select_account" },
+      },
+    }),
     Credentials({
-      credentials: { username: {}, password: {} },
+      credentials: { username: {}, password: { type: "password" } },
       authorize: async (credentials) => {
         try {
           let user = null;
