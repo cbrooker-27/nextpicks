@@ -5,13 +5,11 @@ import CssBaseline from "@mui/material/CssBaseline";
 import Divider from "@mui/material/Divider";
 import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
-import InboxIcon from "@mui/icons-material/MoveToInbox";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import MailIcon from "@mui/icons-material/Mail";
 import MenuIcon from "@mui/icons-material/Menu";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
@@ -19,6 +17,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { Avatar, ListItemAvatar, ListSubheader, Skeleton } from "@mui/material";
+import { Add, EditCalendar, TaskAlt } from "@mui/icons-material";
 
 const drawerWidth = 240;
 
@@ -45,6 +44,8 @@ export default function ResponsiveDrawer(props) {
 
   const loggedIn = session != null;
   console.log("status", status);
+  console.log("session", session);
+  console.log("user", session?.user);
   const userName = loggedIn ? session.user.name : "Guest";
 
   const drawer = (
@@ -58,11 +59,13 @@ export default function ResponsiveDrawer(props) {
           <ListItem disablePadding>
             <ListItemButton
               onClick={() => {
-                loggedIn ? signOut() : signIn();
+                loggedIn
+                  ? signOut()
+                  : signIn({}, {}, { prompt: "select_account" });
               }}
             >
               <ListItemAvatar>
-                <Avatar />
+                <Avatar src={session?.user?.image} />
               </ListItemAvatar>
               <ListItemText
                 primary={`Welcome ${userName}`}
@@ -77,10 +80,11 @@ export default function ResponsiveDrawer(props) {
           <ListItemButton
             onClick={() => {
               router.push("/picks/makePicks");
+              handleDrawerToggle();
             }}
           >
             <ListItemIcon>
-              <InboxIcon />
+              <TaskAlt />
             </ListItemIcon>
             <ListItemText primary="Make Picks" />
           </ListItemButton>
@@ -89,15 +93,29 @@ export default function ResponsiveDrawer(props) {
           <ListItemButton
             onClick={() => {
               router.push("/picks/addGames");
+              handleDrawerToggle();
             }}
           >
             <ListItemIcon>
-              <MailIcon />
+              <Add />
             </ListItemIcon>
             <ListItemText primary="Add Games" />
           </ListItemButton>
         </ListItem>
         <ListSubheader>Admin</ListSubheader>
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={() => {
+              router.push("/picks/changeWeek");
+              handleDrawerToggle();
+            }}
+          >
+            <ListItemIcon>
+              <EditCalendar />
+            </ListItemIcon>
+            <ListItemText primary="Change Week" />
+          </ListItemButton>
+        </ListItem>
         <ListSubheader>Family</ListSubheader>
       </List>
     </div>
