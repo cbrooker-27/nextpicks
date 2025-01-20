@@ -2,6 +2,8 @@
 import { addGames } from "@/utils/db";
 import GameTile from "../../../components/games/gameTile";
 import { useState } from "react";
+import { Fab } from "@mui/material";
+import { Add } from "@mui/icons-material";
 
 export default function AddGamesForm(props) {
   const [readyToSubmit, setReadyToSubmit] = useState(false);
@@ -19,12 +21,12 @@ export default function AddGamesForm(props) {
 
   function gameSpreadUpdated(index, event) {
     const updatedGames = [...games];
-    updatedGames[index].spread = parseInt(event.target.value) + 0.5;
+    console.log("updating game", index, "with spread", event.target.value);
+    updatedGames[index].spread = event.target.value
+      ? parseInt(event.target.value) + 0.5
+      : null;
     const anyEmptySpreads = updatedGames.find(emptySpread);
-    if (!anyEmptySpreads) {
-      console.log("all spreads set");
-      setReadyToSubmit(true);
-    }
+    anyEmptySpreads ? setReadyToSubmit(false) : setReadyToSubmit(true);
     setGames(updatedGames);
   }
 
@@ -32,9 +34,24 @@ export default function AddGamesForm(props) {
     <div>
       <div>
         <h1>Add Games</h1>
-        <button onClick={submitClicked} disabled={!readyToSubmit}>
+        {/* <button onClick={submitClicked} disabled={!readyToSubmit}>
           Submit
-        </button>
+        </button> */}
+        {readyToSubmit && (
+          <Fab
+            style={{
+              position: "fixed",
+              bottom: 16,
+              right: 16,
+            }}
+            color="primary"
+            variant="extended"
+            onClick={submitClicked}
+          >
+            <Add />
+            Add Games
+          </Fab>
+        )}
       </div>
       {games.map((game, index) => (
         <GameTile

@@ -16,7 +16,6 @@ export default function AddGames() {
     }
     fetchData();
   }, []);
-  // const thisWeeksGames = await getThisWeeksGames();
 
   return isLoading ? <Skeleton /> : <AddGamesForm games={thisWeeksGames} />;
 }

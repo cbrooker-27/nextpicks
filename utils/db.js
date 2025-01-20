@@ -56,29 +56,23 @@ export async function connectToDatabase() {
 }
 
 export async function addGames(games) {
-  const client = await connectToDatabase();
-  //console.log(games);
-  const db = client.db("picks");
-
+  const season = await getCurrentWeek().season;
   games.map(async (game) => {
+    const client = await connectToDatabase();
+    const db = client.db("picks");
+    game.season = season;
     const insertResult = await db.collection("games").insertOne(game);
-    //console.log(insertResult)
+    client.close();
   });
-  client.close();
 }
 
 export async function getPickableGames(week) {
   const client = await connectToDatabase();
   const db = client.db("picks");
-  //const games = []
-  //TODO Need to worry about the season too
-  const findResult = db.collection("games").find({ week: week.week });
-  //for await (const doc of findResult) {
-  //games.push(doc)
-  //console.log(doc);
-  //}
+  const findResult = db
+    .collection("games")
+    .find({ week: week.week, season: week.season });
   const games = await findResult.toArray();
-  console.log(games);
   client.close();
   return games;
 }

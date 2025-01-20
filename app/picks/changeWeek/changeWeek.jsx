@@ -12,39 +12,41 @@ import {
 
 const ChangeWeek = () => {
   const [week, setWeek] = useState("");
+  const [newWeek, setNewWeek] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [updateInProgress, setUpdateInProgress] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
       const fetchedWeek = await getCurrentWeek();
       setWeek(fetchedWeek.week);
+      setNewWeek(fetchedWeek.week + 1);
       setIsLoading(false);
     }
     fetchData();
   }, []);
 
   const handleChange = (event) => {
-    setWeek(event.target.value);
+    setNewWeek(event.target.value);
   };
 
   const handleSubmit = async () => {
-    // Add your database update logic here
-    await updateCurrentWeek(week);
-    console.log(`Week changed to: ${week}`);
+    setUpdateInProgress(true);
+    const updateResult = await updateCurrentWeek(newWeek);
+    updateResult.modifiedCount === 1 ? setWeek(newWeek) : alert("Error");
+    setUpdateInProgress(false);
   };
 
   return isLoading ? (
-    <div>
-      <Skeleton />
-      ...
-    </div>
+    <Skeleton />
   ) : (
     <div>
+      Current Week: {week}
       <FormControl variant="outlined" fullWidth>
         <InputLabel id="week-select-label">Week</InputLabel>
         <Select
           labelId="week-select-label"
-          value={week}
+          value={newWeek}
           onChange={handleChange}
           label="Week"
         >
@@ -63,6 +65,8 @@ const ChangeWeek = () => {
         variant="contained"
         color="primary"
         onClick={handleSubmit}
+        loading={updateInProgress}
+        loadingPosition="end"
         style={{ marginTop: "16px" }}
       >
         Change Week
