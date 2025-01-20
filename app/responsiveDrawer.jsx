@@ -27,6 +27,44 @@ export default function ResponsiveDrawer(props) {
   const router = useRouter();
   const { data: session, status } = useSession();
 
+  const navSections = [
+    {
+      sectionname: "Picks",
+      navItems: [
+        {
+          itemname: "Make Picks",
+          icon: TaskAlt,
+          target: "/picks/makePicks",
+        },
+      ],
+    },
+    {
+      sectionname: "Admin",
+      navItems: [
+        {
+          itemname: "Change Week",
+          icon: EditCalendar,
+          target: "/picks/changeWeek",
+        },
+        {
+          itemname: "Add Games",
+          icon: Add,
+          target: "/picks/addGames",
+        },
+      ],
+    },
+    {
+      sectionname: "Family",
+      navItems: [
+        {
+          itemname: "View Picks",
+          icon: TaskAlt,
+          target: "/picks/viewPicks",
+        },
+      ],
+    },
+  ];
+
   const handleDrawerClose = () => {
     setIsClosing(true);
     setMobileOpen(false);
@@ -43,9 +81,6 @@ export default function ResponsiveDrawer(props) {
   };
 
   const loggedIn = session != null;
-  console.log("status", status);
-  console.log("session", session);
-  console.log("user", session?.user);
   const userName = loggedIn ? session.user.name : "Guest";
 
   const drawer = (
@@ -54,9 +89,18 @@ export default function ResponsiveDrawer(props) {
       <Divider />
       <List>
         {status === "loading" ? (
-          <Skeleton></Skeleton>
+          <Skeleton key="skeleton">
+            <ListItem key="skeleton" disablePadding>
+              <ListItemButton>
+                <ListItemAvatar>
+                  <Avatar />
+                </ListItemAvatar>
+                <ListItemText primary="Loading..." />
+              </ListItemButton>
+            </ListItem>
+          </Skeleton>
         ) : (
-          <ListItem disablePadding>
+          <ListItem key="user" disablePadding>
             <ListItemButton
               onClick={() => {
                 loggedIn
@@ -75,48 +119,28 @@ export default function ResponsiveDrawer(props) {
           </ListItem>
         )}
 
-        <ListSubheader>Picks</ListSubheader>
-        <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => {
-              router.push("/picks/makePicks");
-              handleDrawerToggle();
-            }}
-          >
-            <ListItemIcon>
-              <TaskAlt />
-            </ListItemIcon>
-            <ListItemText primary="Make Picks" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => {
-              router.push("/picks/addGames");
-              handleDrawerToggle();
-            }}
-          >
-            <ListItemIcon>
-              <Add />
-            </ListItemIcon>
-            <ListItemText primary="Add Games" />
-          </ListItemButton>
-        </ListItem>
-        <ListSubheader>Admin</ListSubheader>
-        <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => {
-              router.push("/picks/changeWeek");
-              handleDrawerToggle();
-            }}
-          >
-            <ListItemIcon>
-              <EditCalendar />
-            </ListItemIcon>
-            <ListItemText primary="Change Week" />
-          </ListItemButton>
-        </ListItem>
-        <ListSubheader>Family</ListSubheader>
+        {navSections.map((section) => (
+          <div key={section.sectionname}>
+            <ListSubheader key={section.sectionname}>
+              {section.sectionname}
+            </ListSubheader>
+            {section.navItems.map((navItem) => (
+              <ListItem key={navItem.itemname} disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    router.push(navItem.target);
+                    handleDrawerClose();
+                  }}
+                >
+                  <ListItemIcon>
+                    <navItem.icon />
+                  </ListItemIcon>
+                  <ListItemText primary={navItem.itemname} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </div>
+        ))}
       </List>
     </div>
   );
