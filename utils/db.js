@@ -56,7 +56,10 @@ export async function connectToDatabase() {
 }
 
 export async function addGames(games) {
-  const season = await getCurrentWeek().season;
+  const week = await getCurrentWeek();
+  // console.log("Adding games for week", week);
+  const season = week.season;
+  console.log("Adding games for season", season);
   games.map(async (game) => {
     const client = await connectToDatabase();
     const db = client.db("picks");
