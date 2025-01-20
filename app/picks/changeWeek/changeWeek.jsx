@@ -67,6 +67,7 @@ const ChangeWeek = () => {
         onClick={handleSubmit}
         loading={updateInProgress}
         loadingPosition="end"
+        disabled={week === newWeek ? true : false}
         style={{ marginTop: "16px" }}
       >
         Change Week
