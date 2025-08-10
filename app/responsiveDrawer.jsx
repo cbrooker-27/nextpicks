@@ -17,7 +17,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { Avatar, ListItemAvatar, ListSubheader, Skeleton } from "@mui/material";
-import { Add, EditCalendar, TaskAlt } from "@mui/icons-material";
+import {
+  Add,
+  EditCalendar,
+  EventRepeat,
+  Leaderboard,
+  Park,
+  Scoreboard,
+  TaskAlt,
+  Visibility,
+} from "@mui/icons-material";
 
 const drawerWidth = 240;
 
@@ -35,6 +44,26 @@ export default function ResponsiveDrawer(props) {
           itemname: "Make Picks",
           icon: TaskAlt,
           target: "/picks/makePicks",
+        },
+        {
+          itemname: "View Picks",
+          icon: Visibility,
+          target: "/picks/viewPicks",
+        },
+        {
+          itemname: "Standings",
+          icon: Leaderboard,
+          target: "/picks/standings",
+        },
+        {
+          itemname: "Enter Scores",
+          icon: Scoreboard,
+          target: "/picks/enterScores",
+        },
+        {
+          itemname: "Previous Weeks",
+          icon: EventRepeat,
+          target: "/picks/previousWeeks",
         },
       ],
     },
@@ -57,9 +86,9 @@ export default function ResponsiveDrawer(props) {
       sectionname: "Family",
       navItems: [
         {
-          itemname: "View Picks",
-          icon: TaskAlt,
-          target: "/picks/viewPicks",
+          itemname: "XMAS",
+          icon: Park,
+          target: "/xmas",
         },
       ],
     },
@@ -103,27 +132,20 @@ export default function ResponsiveDrawer(props) {
           <ListItem key="user" disablePadding>
             <ListItemButton
               onClick={() => {
-                loggedIn
-                  ? signOut()
-                  : signIn({}, {}, { prompt: "select_account" });
+                loggedIn ? signOut() : signIn({}, {}, { prompt: "select_account" });
               }}
             >
               <ListItemAvatar>
                 <Avatar src={session?.user?.image} />
               </ListItemAvatar>
-              <ListItemText
-                primary={`Welcome ${userName}`}
-                secondary={loggedIn ? "Sign Out" : "Sign In"}
-              />
+              <ListItemText primary={`Welcome ${userName}`} secondary={loggedIn ? "Sign Out" : "Sign In"} />
             </ListItemButton>
           </ListItem>
         )}
 
         {navSections.map((section) => (
           <div key={section.sectionname}>
-            <ListSubheader key={section.sectionname}>
-              {section.sectionname}
-            </ListSubheader>
+            <ListSubheader key={section.sectionname}>{section.sectionname}</ListSubheader>
             {section.navItems.map((navItem) => (
               <ListItem key={navItem.itemname} disablePadding>
                 <ListItemButton
@@ -170,11 +192,7 @@ export default function ResponsiveDrawer(props) {
           </Typography>
         </Toolbar>
       </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        aria-label="mailbox folders"
-      >
+      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }} aria-label="mailbox folders">
         {/* The implementation can be swapped with js to avoid SEO duplication of links. */}
         <Drawer
           variant="temporary"

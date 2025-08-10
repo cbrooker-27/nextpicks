@@ -1,5 +1,5 @@
 "use client";
-import { Skeleton } from "@mui/material";
+import { Skeleton, Tooltip } from "@mui/material";
 import { useEffect, useState } from "react";
 import { getPickableGames, getCurrentWeek } from "@/utils/db";
 import cssClasses from "./viewPicks.module.css";
@@ -36,42 +36,18 @@ export default function ViewPicks() {
           >
             {game.away.name}
             <AvatarGroup>
-              <Avatar
-                sx={{ width: 24, height: 24 }}
-                alt="Freddy"
-                src="/static/images/avatar/1.jpg"
-              />
-              <Avatar
-                sx={{ width: 24, height: 24 }}
-                alt="Chris"
-                src={session?.user?.image}
-              />
-              <Avatar
-                sx={{ width: 24, height: 24 }}
-                alt="Cindy Baker"
-                src="/static/images/avatar/3.jpg"
-              />
-              <Avatar
-                sx={{ width: 24, height: 24 }}
-                alt="Agnes Walker"
-                src="/static/images/avatar/4.jpg"
-              />
-              <Avatar
-                sx={{ width: 24, height: 24 }}
-                alt="Trevor Henderson"
-                src="/static/images/avatar/5.jpg"
-              />
+              <Avatar sx={{ width: 24, height: 24 }} alt="Freddy" src="/static/images/avatar/1.jpg" />
+              <Avatar sx={{ width: 24, height: 24 }} alt="Chris" src={session?.user?.image} />
+              <Avatar sx={{ width: 24, height: 24 }} alt="Cindy Baker" src="/static/images/avatar/3.jpg" />
+              <Avatar sx={{ width: 24, height: 24 }} alt="Agnes Walker" src="/static/images/avatar/4.jpg" />
+              <Avatar sx={{ width: 24, height: 24 }} alt="Trevor Henderson" src="/static/images/avatar/5.jpg" />
             </AvatarGroup>
           </div>
           <div className={cssClasses.team}>
             {" "}
             at{" "}
             <AvatarGroup>
-              <Avatar
-                sx={{ width: 24, height: 24 }}
-                alt="Sammy"
-                src="/static/images/avatar/1.jpg"
-              />
+              <Avatar sx={{ width: 24, height: 24 }} alt="Sammy" src="/static/images/avatar/1.jpg" />
             </AvatarGroup>
           </div>
           <div
@@ -83,31 +59,13 @@ export default function ViewPicks() {
           >
             {game.home.name}
             <AvatarGroup>
-              <Avatar
-                sx={{ width: 24, height: 24 }}
-                alt="Uma"
-                src="/static/images/avatar/1.jpg"
-              />
-              <Avatar
-                sx={{ width: 24, height: 24 }}
-                alt="Travis Howard"
-                src="/static/images/avatar/2.jpg"
-              />
-              <Avatar
-                sx={{ width: 24, height: 24 }}
-                alt="Cindy Baker"
-                src="/static/images/avatar/3.jpg"
-              />
-              <Avatar
-                sx={{ width: 24, height: 24 }}
-                alt="Agnes Walker"
-                src="/static/images/avatar/4.jpg"
-              />
-              <Avatar
-                sx={{ width: 24, height: 24 }}
-                alt="Trevor Henderson"
-                src="/static/images/avatar/5.jpg"
-              />
+              <Tooltip title="Uma" arrow>
+                <Avatar sx={{ width: 24, height: 24 }} alt="Uma" src="/static/images/avatar/1.jpg" />
+              </Tooltip>
+              <Avatar sx={{ width: 24, height: 24 }} alt="Travis Howard" src="/static/images/avatar/2.jpg" />
+              <Avatar sx={{ width: 24, height: 24 }} alt="Cindy Baker" src="/static/images/avatar/3.jpg" />
+              <Avatar sx={{ width: 24, height: 24 }} alt="Agnes Walker" src="/static/images/avatar/4.jpg" />
+              <Avatar sx={{ width: 24, height: 24 }} alt="Trevor Henderson" src="/static/images/avatar/5.jpg" />
             </AvatarGroup>
           </div>
         </div>
