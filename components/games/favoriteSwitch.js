@@ -1,7 +1,7 @@
 import { styled } from "@mui/material/styles";
 import Switch from "@mui/material/Switch";
 
-export default function FavoriteSwitch({ game }) {
+export default function FavoriteSwitch({ game, gameIndex, favoriteUpdated }) {
   const StyledSwitch = styled(Switch)(({ theme }) => ({
     width: 62,
     height: 34,
@@ -53,5 +53,7 @@ export default function FavoriteSwitch({ game }) {
       }),
     },
   }));
-  return <StyledSwitch />;
+  return (
+    <StyledSwitch checked={game.awayFavorite} onChange={(event) => favoriteUpdated(gameIndex, event.target.checked)} />
+  );
 }

@@ -16,13 +16,10 @@ export default function GameTile(props) {
       <div className={cssStyles.teams}>
         <TeamTile team={game.home} home />
         <div className={cssStyles.spread}>
-          <input
-            type="number"
-            onChange={(event) => props.spreadUpdated(props.index, event)}
-          ></input>
+          <input type="number" onChange={(event) => props.spreadUpdated(props.index, event)}></input>
           <FormGroup>
             <FormControlLabel
-              control={<FavoriteSwitch game={game} />}
+              control={<FavoriteSwitch game={game} gameIndex={props.index} favoriteUpdated={props.favoriteUpdated} />}
               label="Favorite"
               labelPlacement="top"
             />
@@ -31,10 +28,7 @@ export default function GameTile(props) {
         <TeamTile team={game.away} />
       </div>
       <div className={cssStyles.gamelocation}>
-        {game.location} -{" "}
-        {startTime.toLocaleDateString() +
-          " - " +
-          startTime.toLocaleTimeString()}
+        {game.location + " - " + startTime.toLocaleDateString() + " - " + startTime.toLocaleTimeString()}
       </div>
     </div>
   );

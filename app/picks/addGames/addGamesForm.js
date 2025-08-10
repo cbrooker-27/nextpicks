@@ -22,11 +22,16 @@ export default function AddGamesForm(props) {
   function gameSpreadUpdated(index, event) {
     const updatedGames = [...games];
     console.log("updating game", index, "with spread", event.target.value);
-    updatedGames[index].spread = event.target.value
-      ? parseInt(event.target.value) + 0.5
-      : null;
+    updatedGames[index].spread = event.target.value ? parseInt(event.target.value) + 0.5 : null;
     const anyEmptySpreads = updatedGames.find(emptySpread);
     anyEmptySpreads ? setReadyToSubmit(false) : setReadyToSubmit(true);
+    setGames(updatedGames);
+  }
+
+  function gameFavoriteUpdated(index, awayFavorite) {
+    const updatedGames = [...games];
+    console.log("updating game", index, "awayFavorite", awayFavorite);
+    updatedGames[index].awayFavorite = awayFavorite;
     setGames(updatedGames);
   }
 
@@ -59,6 +64,7 @@ export default function AddGamesForm(props) {
           key={index}
           index={index}
           spreadUpdated={gameSpreadUpdated}
+          favoriteUpdated={gameFavoriteUpdated}
         />
       ))}
     </div>

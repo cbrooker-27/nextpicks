@@ -9,11 +9,13 @@ export default function PickableGameTile({ game }) {
   const [ffStyle, setFFStyle] = useState({ color: "white" });
   const [ufStyle, setUFStyle] = useState({ color: "white" });
   const [uuStyle, setUUStyle] = useState({ color: "white" });
+  const favorite = game.awayFavorite ? game.away : game.home;
+  const underdog = game.awayFavorite ? game.home : game.away;
   const handleChange = (event, newChoice) => {
     if (newChoice === "ff") {
       setFFStyle({
-        color: game.home.teamColoursHex[1],
-        backgroundColor: game.home.teamColoursHex[0],
+        color: favorite.teamColoursHex[1],
+        backgroundColor: favorite.teamColoursHex[0],
       });
       setUFStyle({ color: "white" });
       setUUStyle({ color: "white" });
@@ -25,8 +27,8 @@ export default function PickableGameTile({ game }) {
       setFFStyle({ color: "white" });
       setUFStyle({ color: "white" });
       setUUStyle({
-        color: game.away.teamColoursHex[1],
-        backgroundColor: game.away.teamColoursHex[0],
+        color: underdog.teamColoursHex[1],
+        backgroundColor: underdog.teamColoursHex[0],
       });
     }
     setChoice(newChoice);
@@ -36,11 +38,11 @@ export default function PickableGameTile({ game }) {
     <div className={cssStyles.gametile}>
       <div className={cssStyles.gamemain}>
         <div className={cssStyles.gameteam}>
-          <TeamTile team={game.home} home />
+          <TeamTile team={favorite} home={!game.awayFavorite} />
         </div>
         <div className={cssStyles.spread}>{game.spread}</div>
         <div className={cssStyles.gameteam}>
-          <TeamTile className={cssStyles.gameteam} team={game.away} />
+          <TeamTile team={underdog} home={game.awayFavorite} />
         </div>
       </div>
       <ToggleButtonGroup
@@ -50,33 +52,18 @@ export default function PickableGameTile({ game }) {
         onChange={handleChange}
         className={cssStyles.choices}
       >
-        <ToggleButton
-          value="ff"
-          aria-label="ff"
-          style={ffStyle}
-          className={cssStyles.choice}
-        >
-          <img src={`${game.home.officialLogoImageSrc}`} height="25px" />
+        <ToggleButton value="ff" aria-label="ff" style={ffStyle} className={cssStyles.choice}>
+          <img src={`${favorite.officialLogoImageSrc}`} height="25px" />
           {"---"}
-          {`${game.home.name} will win by more than ${game.spread}`}
+          {`${favorite.name} will win by more than ${game.spread}`}
         </ToggleButton>
-        <ToggleButton
-          value="uf"
-          aria-label="uf"
-          style={ufStyle}
-          className={cssStyles.choice}
-        >
-          {`${game.home.name} will win by less than ${game.spread}`}
+        <ToggleButton value="uf" aria-label="uf" style={ufStyle} className={cssStyles.choice}>
+          {`${favorite.name} will win by less than ${game.spread}`}
         </ToggleButton>
-        <ToggleButton
-          value="uu"
-          aria-label="uu"
-          style={uuStyle}
-          className={cssStyles.choice}
-        >
-          <img src={`${game.away.officialLogoImageSrc}`} height="25px" />
+        <ToggleButton value="uu" aria-label="uu" style={uuStyle} className={cssStyles.choice}>
+          <img src={`${underdog.officialLogoImageSrc}`} height="25px" />
           {"---"}
-          {`${game.away.name} will win`}{" "}
+          {`${underdog.name} will win`}{" "}
         </ToggleButton>
       </ToggleButtonGroup>
       <div className={cssStyles.gamefooter}>
