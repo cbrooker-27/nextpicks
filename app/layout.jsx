@@ -21,7 +21,7 @@ export default function Layout({ session, children }) {
           <ResponsiveDrawer>
             {children}
             <div id="notifications"></div>
-            <Footer />
+            {/* <Footer /> */}
           </ResponsiveDrawer>
         </MySessionProvider>
       </body>

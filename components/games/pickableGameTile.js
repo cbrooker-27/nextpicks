@@ -4,34 +4,33 @@ import { useState } from "react";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 
-export default function PickableGameTile({ game }) {
+export default function PickableGameTile({ game, index, choiceChanged }) {
   const [choice, setChoice] = useState("");
-  const [ffStyle, setFFStyle] = useState({ color: "white" });
-  const [ufStyle, setUFStyle] = useState({ color: "white" });
-  const [uuStyle, setUUStyle] = useState({ color: "white" });
   const favorite = game.awayFavorite ? game.away : game.home;
   const underdog = game.awayFavorite ? game.home : game.away;
+  let ffStyle = { color: "white" };
+  let ufStyle = { color: "white" };
+  let uuStyle = { color: "white" };
+
+  if (choice === "ff") {
+    ffStyle = {
+      color: favorite.teamColoursHex[1],
+      backgroundColor: favorite.teamColoursHex[0],
+      border: "1px solid " + favorite.teamColoursHex[1],
+    };
+  } else if (choice === "uf") {
+    ufStyle = { color: "orange", backgroundColor: "lightyellow", border: "1px solid orange" };
+  } else if (choice === "uu") {
+    uuStyle = {
+      color: underdog.teamColoursHex[1],
+      backgroundColor: underdog.teamColoursHex[0],
+      border: "1px solid " + underdog.teamColoursHex[1],
+    };
+  }
+  const startTime = new Date(game.startTime);
   const handleChange = (event, newChoice) => {
-    if (newChoice === "ff") {
-      setFFStyle({
-        color: favorite.teamColoursHex[1],
-        backgroundColor: favorite.teamColoursHex[0],
-      });
-      setUFStyle({ color: "white" });
-      setUUStyle({ color: "white" });
-    } else if (newChoice === "uf") {
-      setFFStyle({ color: "white" });
-      setUFStyle({ color: "green" });
-      setUUStyle({ color: "white" });
-    } else if (newChoice === "uu") {
-      setFFStyle({ color: "white" });
-      setUFStyle({ color: "white" });
-      setUUStyle({
-        color: underdog.teamColoursHex[1],
-        backgroundColor: underdog.teamColoursHex[0],
-      });
-    }
     setChoice(newChoice);
+    choiceChanged(index, newChoice);
   };
 
   return (
@@ -67,7 +66,8 @@ export default function PickableGameTile({ game }) {
         </ToggleButton>
       </ToggleButtonGroup>
       <div className={cssStyles.gamefooter}>
-        {game.location} - <p className={cssStyles.gameid}>{game._id}</p>
+        {game.location + " - " + startTime.toLocaleDateString() + " - " + startTime.toLocaleTimeString()}{" "}
+        <p className={cssStyles.gameid}>{game._id}</p>
       </div>
     </div>
   );

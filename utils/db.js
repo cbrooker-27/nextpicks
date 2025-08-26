@@ -31,9 +31,7 @@ export const getCurrentWeek = async () => {
 export const updateUser = async (user) => {
   const client = await connectToDatabase();
   const db = client.db("picks");
-  const updatedUser = await db
-    .collection("users")
-    .updateOne({ _id: user._id }, { $set: user });
+  const updatedUser = await db.collection("users").updateOne({ _id: user._id }, { $set: user });
   console.log("updated user: " + updatedUser);
   client.close();
   return updatedUser;
@@ -42,9 +40,7 @@ export const updateUser = async (user) => {
 export const updateCurrentWeek = async (newWeek) => {
   const client = await connectToDatabase();
   const db = client.db("picks");
-  const updatedWeek = await db
-    .collection("currentWeek")
-    .updateOne({}, { $set: { week: newWeek } });
+  const updatedWeek = await db.collection("currentWeek").updateOne({}, { $set: { week: newWeek } });
   console.log("updated week: " + updatedWeek);
   client.close();
   return updatedWeek;
@@ -59,7 +55,7 @@ export async function addGames(games) {
   const week = await getCurrentWeek();
   // console.log("Adding games for week", week);
   const season = week.season;
-  console.log("Adding games for season", season);
+  // console.log("Adding games for season", season);
   games.map(async (game) => {
     const client = await connectToDatabase();
     const db = client.db("picks");
@@ -69,12 +65,19 @@ export async function addGames(games) {
   });
 }
 
+export async function addUserChoices(choices) {
+  const client = await connectToDatabase();
+  const db = client.db("picks");
+  const insertResult = await db.collection("userChoices").insertMany(choices);
+  client.close();
+  console.log("Inserted choices: ", insertResult);
+  return JSON.stringify(insertResult);
+}
+
 export async function getPickableGames(week) {
   const client = await connectToDatabase();
   const db = client.db("picks");
-  const findResult = db
-    .collection("games")
-    .find({ week: week.week, season: week.season });
+  const findResult = db.collection("games").find({ week: week.week, season: week.season });
   const games = await findResult.toArray();
   client.close();
   return games;
