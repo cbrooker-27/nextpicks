@@ -1,7 +1,7 @@
 "use client";
 import { Skeleton, Tooltip } from "@mui/material";
 import { useEffect, useState } from "react";
-import { getPickableGames, getCurrentWeek } from "@/utils/db";
+import { getAllUserFromDb, getThisWeeksPickedGames } from "@/utils/db";
 import cssClasses from "./viewPicks.module.css";
 import Avatar from "@mui/material/Avatar";
 import AvatarGroup from "@mui/material/AvatarGroup";
@@ -9,15 +9,18 @@ import { useSession } from "next-auth/react";
 
 export default function ViewPicks() {
   const [games, setGames] = useState([]);
+  const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { data: session, status } = useSession();
   useEffect(() => {
     async function fetchData() {
-      const fetchedGames = await getPickableGames(await getCurrentWeek());
-      setGames(fetchedGames);
+      const fetchedGames = await getThisWeeksPickedGames();
+      const users = await getAllUserFromDb();
+      setUsers(JSON.parse(users));
+      setGames(JSON.parse(fetchedGames));
       setIsLoading(false);
     }
-    fetchData();
+    void fetchData();
   }, []);
 
   return isLoading ? (
@@ -36,18 +39,38 @@ export default function ViewPicks() {
           >
             {game.away.name}
             <AvatarGroup>
-              <Avatar sx={{ width: 24, height: 24 }} alt="Freddy" src="/static/images/avatar/1.jpg" />
-              <Avatar sx={{ width: 24, height: 24 }} alt="Chris" src={session?.user?.image} />
-              <Avatar sx={{ width: 24, height: 24 }} alt="Cindy Baker" src="/static/images/avatar/3.jpg" />
-              <Avatar sx={{ width: 24, height: 24 }} alt="Agnes Walker" src="/static/images/avatar/4.jpg" />
-              <Avatar sx={{ width: 24, height: 24 }} alt="Trevor Henderson" src="/static/images/avatar/5.jpg" />
+              {game.userChoices.map(
+                (choice) =>
+                  choice.choice === "ff" && (
+                    <Tooltip title={choice.userId} arrow>
+                      <Avatar
+                        key={choice.userId}
+                        sx={{ width: 24, height: 24 }}
+                        alt={choice.userId}
+                        src={users.find((user) => user.name === choice.userId)?.image}
+                      />
+                    </Tooltip>
+                  )
+              )}
             </AvatarGroup>
           </div>
           <div className={cssClasses.team}>
             {" "}
             at{" "}
             <AvatarGroup>
-              <Avatar sx={{ width: 24, height: 24 }} alt="Sammy" src="/static/images/avatar/1.jpg" />
+              {game.userChoices.map(
+                (choice) =>
+                  choice.choice === "uf" && (
+                    <Tooltip title={choice.userId} arrow>
+                      <Avatar
+                        key={choice.userId}
+                        sx={{ width: 24, height: 24 }}
+                        alt={choice.userId}
+                        src={users.find((user) => user.name === choice.userId)?.image}
+                      />
+                    </Tooltip>
+                  )
+              )}
             </AvatarGroup>
           </div>
           <div
@@ -59,13 +82,19 @@ export default function ViewPicks() {
           >
             {game.home.name}
             <AvatarGroup>
-              <Tooltip title="Uma" arrow>
-                <Avatar sx={{ width: 24, height: 24 }} alt="Uma" src="/static/images/avatar/1.jpg" />
-              </Tooltip>
-              <Avatar sx={{ width: 24, height: 24 }} alt="Travis Howard" src="/static/images/avatar/2.jpg" />
-              <Avatar sx={{ width: 24, height: 24 }} alt="Cindy Baker" src="/static/images/avatar/3.jpg" />
-              <Avatar sx={{ width: 24, height: 24 }} alt="Agnes Walker" src="/static/images/avatar/4.jpg" />
-              <Avatar sx={{ width: 24, height: 24 }} alt="Trevor Henderson" src="/static/images/avatar/5.jpg" />
+              {game.userChoices.map(
+                (choice) =>
+                  choice.choice === "uu" && (
+                    <Tooltip title={choice.userId} arrow>
+                      <Avatar
+                        key={choice.userId}
+                        sx={{ width: 24, height: 24 }}
+                        alt={choice.userId}
+                        src={users.find((user) => user.name === choice.userId)?.image}
+                      />
+                    </Tooltip>
+                  )
+              )}
             </AvatarGroup>
           </div>
         </div>

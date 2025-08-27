@@ -11,6 +11,13 @@ export const getUserFromDb = async (username) => {
   client.close();
   return user;
 };
+export const getAllUserFromDb = async () => {
+  const client = await connectToDatabase();
+  const db = client.db("picks");
+  const users = await db.collection("users").find().toArray();
+  client.close();
+  return JSON.stringify(users);
+};
 export const getUserFromDbWithEmail = async (emailAddress) => {
   const client = await connectToDatabase();
   const db = client.db("picks");
@@ -81,4 +88,21 @@ export async function getPickableGames(week) {
   const games = await findResult.toArray();
   client.close();
   return games;
+}
+
+export async function getThisWeeksPickedGames() {
+  const week = await getCurrentWeek();
+  const games = await getPickableGames(week);
+
+  const pickedGames = await Promise.all(
+    games.map(async (game) => {
+      const client = await connectToDatabase();
+      const db = client.db("picks");
+      const findResult = db.collection("userChoices").find({ gameId: game._id });
+      game.userChoices = await findResult.toArray();
+      client.close();
+      return game;
+    })
+  );
+  return JSON.stringify(pickedGames);
 }

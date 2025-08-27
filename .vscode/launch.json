@@ -11,15 +11,13 @@
       "name": "chrome client-side",
       "type": "chrome",
       "request": "launch",
-      "url": "http://localhost:3000",
-      "port": 9222
+      "url": "http://localhost:3000"
     },
     {
       "name": "edge client-side",
       "type": "msedge",
       "request": "launch",
-      "url": "http://localhost:3000",
-      "port": 9222
+      "url": "http://localhost:3000"
     },
     {
       "name": "chrome full stack",
