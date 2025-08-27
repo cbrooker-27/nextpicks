@@ -42,7 +42,7 @@ export default function ViewPicks() {
               {game.userChoices.map(
                 (choice) =>
                   choice.choice === "ff" && (
-                    <Tooltip title={choice.userId} arrow>
+                    <Tooltip key={choice.userId} title={choice.userId} arrow>
                       <Avatar
                         key={choice.userId}
                         sx={{ width: 24, height: 24 }}
@@ -61,7 +61,7 @@ export default function ViewPicks() {
               {game.userChoices.map(
                 (choice) =>
                   choice.choice === "uf" && (
-                    <Tooltip title={choice.userId} arrow>
+                    <Tooltip key={choice.userId} title={choice.userId} arrow>
                       <Avatar
                         key={choice.userId}
                         sx={{ width: 24, height: 24 }}
@@ -85,7 +85,7 @@ export default function ViewPicks() {
               {game.userChoices.map(
                 (choice) =>
                   choice.choice === "uu" && (
-                    <Tooltip title={choice.userId} arrow>
+                    <Tooltip key={choice.userId} title={choice.userId} arrow>
                       <Avatar
                         key={choice.userId}
                         sx={{ width: 24, height: 24 }}
