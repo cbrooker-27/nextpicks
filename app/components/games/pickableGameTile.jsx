@@ -39,7 +39,17 @@ export default function PickableGameTile({ game, index, choiceChanged }) {
         <div className={cssStyles.gameteam}>
           <TeamTile team={favorite} home={!game.awayFavorite} />
         </div>
-        <div className={cssStyles.spread}>{game.spread}</div>
+        <div className={cssStyles.spread}>
+          {game.spread === 0.5 ? (
+            <>
+              Pick
+              <br />
+              'em
+            </>
+          ) : (
+            game.spread
+          )}
+        </div>
         <div className={cssStyles.gameteam}>
           <TeamTile team={underdog} home={game.awayFavorite} />
         </div>
@@ -54,11 +64,13 @@ export default function PickableGameTile({ game, index, choiceChanged }) {
         <ToggleButton value="ff" aria-label="ff" style={ffStyle} className={cssStyles.choice}>
           <img alt="" src={`${favorite.officialLogoImageSrc}`} height="25px" />
           {"---"}
-          {`${favorite.name} will win by more than ${game.spread}`}
+          {favorite.name + " will win" + (game.spread !== 0.5 ? `by more than ${game.spread}` : "")}
         </ToggleButton>
-        <ToggleButton value="uf" aria-label="uf" style={ufStyle} className={cssStyles.choice}>
-          {`${favorite.name} will win by less than ${game.spread}`}
-        </ToggleButton>
+        {game.spread !== 0.5 && (
+          <ToggleButton value="uf" aria-label="uf" style={ufStyle} className={cssStyles.choice}>
+            {`${favorite.name} will win by less than ${game.spread}`}
+          </ToggleButton>
+        )}
         <ToggleButton value="uu" aria-label="uu" style={uuStyle} className={cssStyles.choice}>
           <img alt="" src={`${underdog.officialLogoImageSrc}`} height="25px" />
           {"---"}
