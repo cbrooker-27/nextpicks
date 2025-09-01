@@ -1,5 +1,5 @@
 .teamContainer {
-    display: inline-block;
+    display: inline-flex;
     vertical-align: middle;
 }
 
@@ -24,4 +24,13 @@
     font-size: xx-large;
     text-align: center;
     color: white;
+}
+
+.teamContainer .avatarGroup {
+    display: flex;
+    flex-direction: column-reverse;
+    width: 30px;
+    align-items: center;
+    justify-content: center;
+    padding-left: 10px;
 }

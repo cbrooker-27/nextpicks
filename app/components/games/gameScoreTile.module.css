@@ -4,12 +4,14 @@
     border-color: blue;
     border-width: 3;
     margin: 5px;
-    width: 525px;
+    width: 585px;
     background-color: black;
     color: white;
     display: inline-block;
     
 }
+
+
 
 .gameid {
     font-size: small;
@@ -19,12 +21,19 @@
 
 .teams {
     background-color: inherit;
+    display: flex;
     
 }
 
 .spread {
-    display: inline-block;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     vertical-align: middle;
+    text-align: center;
+    font-size: xx-large;
+    color: greenyellow;
 }
 .spread input{ 
     width: 5rem;
@@ -34,10 +43,6 @@
     font-size: x-large;
 }
 
-.favoriteToggle{ 
-    width: 3.5rem;
-    display: block
-}
 
 .gameteam {
     display: inline-block;
@@ -53,4 +58,11 @@
     font-size: small;
     text-align: center;
     color: greenyellow;
+}
+
+.spread .avatarGroup {
+    display: flex;
+    flex-direction: column-reverse;
+    width: 30px;
+    align-items: center;
 }

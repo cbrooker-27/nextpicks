@@ -20,55 +20,47 @@ export default function GameScoreTile({ game, liveDetails, users }) {
       <Chip label="Final" color="success" icon={<Sports />} />
     );
 
-  const ffAvatars = game.userChoices.map(
-    (choice, index) =>
-      choice.choice === "ff" && (
-        <Tooltip key={choice.userId + index} title={choice.userId} arrow>
-          <Avatar
-            key={choice.userId + index}
-            sx={{ width: 24, height: 24 }}
-            alt={choice.userId}
-            src={users.find((user) => user.name === choice.userId)?.image}
-          />
-        </Tooltip>
-      )
-  );
+  const generateAvatars = (choice, index) => {
+    const user = users.find((user) => user.name === choice.userId);
+    return (
+      <Tooltip key={choice.userId + index} title={choice.userId} arrow>
+        <Avatar key={choice.userId + index} sx={{ width: 24, height: 24 }} alt={choice.userId} src={user?.image}>
+          {user?.name.substring(0, 1)}
+        </Avatar>
+      </Tooltip>
+    );
+  };
 
-  const ufAvatars = game.userChoices.map(
-    (choice, index) =>
-      choice.choice === "uf" && (
-        <Tooltip key={choice.userId + index} title={choice.userId} arrow>
-          <Avatar
-            key={choice.userId + index}
-            sx={{ width: 24, height: 24 }}
-            alt={choice.userId}
-            src={users.find((user) => user.name === choice.userId)?.image}
-          />
-        </Tooltip>
-      )
-  );
+  const ffAvatars = game.userChoices.map((choice, index) => {
+    if (choice.choice === "ff") {
+      return generateAvatars(choice, index);
+    }
+  });
 
-  const uuAvatars = game.userChoices.map(
-    (choice, index) =>
-      choice.choice === "uu" && (
-        <Tooltip key={choice.userId + index} title={choice.userId} arrow>
-          <Avatar
-            key={choice.userId + index}
-            sx={{ width: 24, height: 24 }}
-            alt={choice.userId}
-            src={users.find((user) => user.name === choice.userId)?.image}
-          />
-        </Tooltip>
-      )
-  );
+  const ufAvatars = game.userChoices.map((choice, index) => {
+    if (choice.choice === "uf") {
+      return generateAvatars(choice, index);
+    }
+  });
+
+  const uuAvatars = game.userChoices.map((choice, index) => {
+    if (choice.choice === "uu") {
+      return generateAvatars(choice, index);
+    }
+  });
 
   return (
     <div className={cssStyles.gametile}>
       <div className={cssStyles.teams}>
-        <TeamTile team={favorite} home={!game.awayFavorite} score={favScore} avatars={ffAvatars} />
+        <TeamTile team={favorite} home={!game.awayFavorite} score={favScore} avatars={ffAvatars} favorite />
+
         <div className={cssStyles.spread}>
           {gameChip}
-          <AvatarGroup max={8}>{ufAvatars}</AvatarGroup>
+
+          {game.spread === 0.5 ? "Pick'em" : "-" + game.spread}
+          <AvatarGroup max={4} className={cssStyles.avatarGroup} spacing={0}>
+            {ufAvatars}
+          </AvatarGroup>
         </div>
         <TeamTile team={underdog} home={game.awayFavorite} score={undScore} avatars={uuAvatars} />
       </div>
