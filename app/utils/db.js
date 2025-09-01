@@ -86,6 +86,8 @@ export async function getPickableGames(week) {
   const db = client.db("picks");
   const findResult = db.collection("games").find({ week: week.week, season: week.season });
   const games = await findResult.toArray();
+  // @ts-ignore
+  games.sort((a, b) => a._id - b._id);
   client.close();
   return games;
 }
@@ -104,5 +106,7 @@ export async function getThisWeeksPickedGames() {
       return game;
     })
   );
+  // @ts-ignore
+  pickedGames.sort((a, b) => a._id - b._id);
   return JSON.stringify(pickedGames);
 }

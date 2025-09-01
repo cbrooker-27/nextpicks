@@ -1,6 +1,7 @@
 import cssStyles from "./teamTile.module.css";
+import { AvatarGroup } from "@mui/material";
 
-export default function TeamTile({ team, home }) {
+export default function TeamTile({ team, home = false, score = null, avatars = null }) {
   return (
     <div className={cssStyles.teamContainer}>
       <div
@@ -16,6 +17,8 @@ export default function TeamTile({ team, home }) {
           <div>{home ? "HOME" : "AWAY"}</div>
         </div>
       </div>
+      <div className={cssStyles.score}>{score}</div>
+      {avatars && <AvatarGroup max={8}>{avatars}</AvatarGroup>}
     </div>
   );
 }

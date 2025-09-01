@@ -1,6 +1,6 @@
 "use client";
-import { addGames } from "@/utils/db";
-import GameTile from "../../../components/games/gameTile";
+import { addGames } from "@/app/utils/db";
+import AddGameTile from "../../components/games/addGameTile";
 import { useState } from "react";
 import { Fab } from "@mui/material";
 import { Add } from "@mui/icons-material";
@@ -39,9 +39,6 @@ export default function AddGamesForm(props) {
     <div>
       <div>
         <h1>Add Games</h1>
-        {/* <button onClick={submitClicked} disabled={!readyToSubmit}>
-          Submit
-        </button> */}
         {readyToSubmit && (
           <Fab
             style={{
@@ -59,7 +56,7 @@ export default function AddGamesForm(props) {
         )}
       </div>
       {games.map((game, index) => (
-        <GameTile
+        <AddGameTile
           game={game}
           key={index}
           index={index}

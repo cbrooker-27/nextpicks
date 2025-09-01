@@ -1,14 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getCurrentWeek, updateCurrentWeek } from "../../../utils/db";
-import {
-  Button,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  Skeleton,
-} from "@mui/material";
+import { getCurrentWeek, updateCurrentWeek } from "../../utils/db";
+import { Button, MenuItem, Select, FormControl, InputLabel, Skeleton } from "@mui/material";
 
 const ChangeWeek = () => {
   const [week, setWeek] = useState("");
@@ -44,18 +37,9 @@ const ChangeWeek = () => {
       Current Week: {week}
       <FormControl variant="outlined" fullWidth>
         <InputLabel id="week-select-label">Week</InputLabel>
-        <Select
-          labelId="week-select-label"
-          value={newWeek}
-          onChange={handleChange}
-          label="Week"
-        >
+        <Select labelId="week-select-label" value={newWeek} onChange={handleChange} label="Week">
           {[...Array(18).keys()].map((weekNumber) => (
-            <MenuItem
-              key={weekNumber + 1}
-              value={weekNumber + 1}
-              selected={weekNumber + 1 === week ? true : false}
-            >
+            <MenuItem key={weekNumber + 1} value={weekNumber + 1} selected={weekNumber + 1 === week ? true : false}>
               Week {weekNumber + 1}
             </MenuItem>
           ))}

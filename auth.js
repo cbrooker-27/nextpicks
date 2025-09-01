@@ -2,27 +2,32 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
-import client from "./lib/db";
-import { signInSchema } from "./lib/zod";
+import client from "./app/lib/db";
+import { signInSchema } from "./app/lib/zod";
 // Your own logic for dealing with plaintext password strings; be careful!
-import { saltAndHashPassword } from "@/utils/password";
-import { getUserFromDb, getUserFromDbWithEmail, updateUser } from "@/utils/db";
+import { saltAndHashPassword } from "@/app/utils/password";
+import { getUserFromDb, getUserFromDbWithEmail, updateUser } from "@/app/utils/db";
 import { ZodError } from "zod";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  session: { jwt: true },
+  session: { strategy: "jwt" },
   adapter: MongoDBAdapter(client),
   callbacks: {
     async signIn(props) {
-      const user = await getUserFromDbWithEmail(props.user.email);
-      if (!user) {
-        return false;
+      let user = props.user;
+      if (props.account.provider !== "credentials") {
+        user = await getUserFromDbWithEmail(props.user.email);
+        if (!user) {
+          return false;
+        }
+
+        if (!user.image) {
+          user.image = props.user.image;
+        }
       }
 
-      if (!user.image) {
-        user.image = props.user.image;
-        await updateUser(user);
-      }
+      user.lastSignIn = new Date();
+      await updateUser(user);
 
       return true;
     },
@@ -40,11 +45,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try {
           let user = null;
 
-          const { username, password } = await signInSchema.parseAsync(
-            credentials
-          );
+          const { username, password } = await signInSchema.parseAsync(credentials);
           // logic to salt and hash password
-          const pwHash = saltAndHashPassword(password);
+          const pwHash = await saltAndHashPassword(password);
 
           // logic to verify if the user exists
           user = await getUserFromDb(username, pwHash);

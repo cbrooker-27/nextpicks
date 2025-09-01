@@ -1,17 +1,23 @@
 "use client";
-import PickableGameTile from "@/components/games/pickableGameTile";
-import { addUserChoices } from "@/utils/db";
+import PickableGameTile from "@/app/components/games/pickableGameTile";
+import { addUserChoices } from "@/app/utils/db";
 import { SportsFootball } from "@mui/icons-material";
-import { Fab } from "@mui/material";
+import { CircularProgress, Fab } from "@mui/material";
 import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 import { useState } from "react";
 
 // TODO Need to make sure user has not already picked
+// right now i only remove the submit button, but we should throw up
+// a message saying picks are in progress (some kind of loading thingy)
+// then send them to view picks
 
 export default function MakePicksForm(props) {
   const [readyToSubmit, setReadyToSubmit] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const { data: session, status } = useSession();
+  const router = useRouter();
 
   if (status === "loading") {
     return <p>Loading...</p>;
@@ -31,6 +37,7 @@ export default function MakePicksForm(props) {
 
   async function submitClicked(event) {
     event.preventDefault();
+    setSubmitting(true);
     const choices = [];
     games.forEach((game) => {
       choices.push({
@@ -40,8 +47,11 @@ export default function MakePicksForm(props) {
       });
     });
     const result = await addUserChoices(choices);
-    console.log(JSON.parse(result));
+    setSubmitting(false);
+    setReadyToSubmit(false);
+    router.push("/picks/view");
   }
+
   if (!games) return <p>No game data</p>;
 
   return (
@@ -57,15 +67,25 @@ export default function MakePicksForm(props) {
             }}
             color="primary"
             variant="extended"
+            disabled={submitting}
             onClick={submitClicked}
           >
-            <SportsFootball />
-            Submit Picks
+            {submitting ? (
+              <>
+                <CircularProgress size={24} style={{ marginLeft: 8 }} />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <SportsFootball />
+                Submit Picks
+              </>
+            )}
           </Fab>
         )}
       </div>
       {games.map((game, index) => (
-        <PickableGameTile game={game} key={index} index={index} choiceChanged={choiceChanged} />
+        <PickableGameTile game={game} key={game._id} index={index} choiceChanged={choiceChanged} />
       ))}
     </div>
   );

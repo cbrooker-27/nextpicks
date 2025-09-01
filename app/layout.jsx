@@ -1,6 +1,6 @@
 import ResponsiveDrawer from "./responsiveDrawer";
-import Footer from "@/components/layout/footer";
-import MySessionProvider from "./mySessionProvider";
+import Footer from "@/app/components/layout/footer";
+import { SessionProvider } from "next-auth/react";
 
 export const metadata = {
   title: "ChrisBrooker.com",
@@ -13,17 +13,17 @@ export const viewport = {
   maximumScale: 1,
 };
 
-export default function Layout({ session, children }) {
+export default function Layout({ children }) {
   return (
     <html lang="en">
       <body>
-        <MySessionProvider session={session}>
+        <SessionProvider>
           <ResponsiveDrawer>
             {children}
             <div id="notifications"></div>
             {/* <Footer /> */}
           </ResponsiveDrawer>
-        </MySessionProvider>
+        </SessionProvider>
       </body>
     </html>
   );

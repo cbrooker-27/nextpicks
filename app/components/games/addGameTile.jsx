@@ -1,10 +1,10 @@
-import cssStyles from "./gameTile.module.css";
+import cssStyles from "./addGameTile.module.css";
 import TeamTile from "../teams/teamTile";
 import FormGroup from "@mui/material/FormGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FavoriteSwitch from "./favoriteSwitch";
 
-export default function GameTile(props) {
+export default function AddGameTile(props) {
   const game = props.game;
   const startTime = new Date(game.startTime);
 

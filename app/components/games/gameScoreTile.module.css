@@ -1,0 +1,56 @@
+.gametile{
+    border-radius: 8px;
+    border-style: solid;
+    border-color: blue;
+    border-width: 3;
+    margin: 5px;
+    width: 525px;
+    background-color: black;
+    color: white;
+    display: inline-block;
+    
+}
+
+.gameid {
+    font-size: small;
+    display: inline-block;
+    color: azure;
+}
+
+.teams {
+    background-color: inherit;
+    
+}
+
+.spread {
+    display: inline-block;
+    vertical-align: middle;
+}
+.spread input{ 
+    width: 5rem;
+    height: 3rem;
+    background: black;
+    color: white;
+    font-size: x-large;
+}
+
+.favoriteToggle{ 
+    width: 3.5rem;
+    display: block
+}
+
+.gameteam {
+    display: inline-block;
+    width: 200px;
+    height: 225px;
+    background-size: 200px;
+    background-repeat: no-repeat;
+    background-position: bottom;
+    color: white;
+}
+
+.gamelocation {
+    font-size: small;
+    text-align: center;
+    color: greenyellow;
+}

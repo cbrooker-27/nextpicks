@@ -1,5 +1,5 @@
 "use client";
-import { getThisWeeksGames } from "@/lib/msf";
+import { getThisWeeksGamesFromMsf } from "@/app/lib/msf";
 import AddGamesForm from "./addGamesForm";
 import { Skeleton } from "@mui/material";
 import { useEffect, useState } from "react";
@@ -10,7 +10,7 @@ export default function AddGames() {
 
   useEffect(() => {
     async function fetchData() {
-      const fetchedGames = await getThisWeeksGames();
+      const fetchedGames = await getThisWeeksGamesFromMsf();
       setThisWeeksGames(fetchedGames);
       setIsLoading(false);
     }

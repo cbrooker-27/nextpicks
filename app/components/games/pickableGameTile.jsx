@@ -52,7 +52,7 @@ export default function PickableGameTile({ game, index, choiceChanged }) {
         className={cssStyles.choices}
       >
         <ToggleButton value="ff" aria-label="ff" style={ffStyle} className={cssStyles.choice}>
-          <img src={`${favorite.officialLogoImageSrc}`} height="25px" />
+          <img alt="" src={`${favorite.officialLogoImageSrc}`} height="25px" />
           {"---"}
           {`${favorite.name} will win by more than ${game.spread}`}
         </ToggleButton>
@@ -60,14 +60,13 @@ export default function PickableGameTile({ game, index, choiceChanged }) {
           {`${favorite.name} will win by less than ${game.spread}`}
         </ToggleButton>
         <ToggleButton value="uu" aria-label="uu" style={uuStyle} className={cssStyles.choice}>
-          <img src={`${underdog.officialLogoImageSrc}`} height="25px" />
+          <img alt="" src={`${underdog.officialLogoImageSrc}`} height="25px" />
           {"---"}
           {`${underdog.name} will win`}{" "}
         </ToggleButton>
       </ToggleButtonGroup>
       <div className={cssStyles.gamefooter}>
-        {game.location + " - " + startTime.toLocaleDateString() + " - " + startTime.toLocaleTimeString()}{" "}
-        <p className={cssStyles.gameid}>{game._id}</p>
+        {game.location + " - " + startTime.toLocaleDateString() + " - " + startTime.toLocaleTimeString()}
       </div>
     </div>
   );

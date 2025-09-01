@@ -17,16 +17,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { Avatar, ListItemAvatar, ListSubheader, Skeleton } from "@mui/material";
-import {
-  Add,
-  EditCalendar,
-  EventRepeat,
-  Leaderboard,
-  Park,
-  Scoreboard,
-  TaskAlt,
-  Visibility,
-} from "@mui/icons-material";
+import { Add, EditCalendar, EventRepeat, Leaderboard, Park, TaskAlt, Visibility } from "@mui/icons-material";
 
 const drawerWidth = 240;
 
@@ -48,22 +39,19 @@ export default function ResponsiveDrawer(props) {
         {
           itemname: "View Picks",
           icon: Visibility,
-          target: "/picks/viewPicks",
+          target: "/picks/view",
         },
         {
           itemname: "Standings",
           icon: Leaderboard,
           target: "/picks/standings",
-        },
-        {
-          itemname: "Enter Scores",
-          icon: Scoreboard,
-          target: "/picks/enterScores",
+          disabled: true,
         },
         {
           itemname: "Previous Weeks",
           icon: EventRepeat,
           target: "/picks/previousWeeks",
+          disabled: true,
         },
       ],
     },
@@ -132,7 +120,7 @@ export default function ResponsiveDrawer(props) {
           <ListItem key="user" disablePadding>
             <ListItemButton
               onClick={() => {
-                loggedIn ? signOut() : signIn({}, {}, { prompt: "select_account" });
+                loggedIn ? signOut() : signIn(null, {}, { prompt: "select_account" });
               }}
             >
               <ListItemAvatar>
@@ -153,6 +141,7 @@ export default function ResponsiveDrawer(props) {
                     router.push(navItem.target);
                     handleDrawerClose();
                   }}
+                  disabled={navItem.disabled}
                 >
                   <ListItemIcon>
                     <navItem.icon />
