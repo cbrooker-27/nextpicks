@@ -44,7 +44,7 @@ export default function PickableGameTile({ game, index, choiceChanged }) {
             <>
               Pick
               <br />
-              'em
+              &apos;em
             </>
           ) : (
             game.spread
