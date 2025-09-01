@@ -37,6 +37,7 @@ export default function MakePicksForm(props) {
 
   async function submitClicked(event) {
     event.preventDefault();
+    const selectionTime = new Date().toISOString();
     setSubmitting(true);
     const choices = [];
     games.forEach((game) => {
@@ -44,6 +45,7 @@ export default function MakePicksForm(props) {
         gameId: game._id,
         userId: session.user.name,
         choice: game.userChoice,
+        selectionTime: selectionTime,
       });
     });
     const result = await addUserChoices(choices);
