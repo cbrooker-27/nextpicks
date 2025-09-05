@@ -2,7 +2,7 @@
 import cssStyles from "./gameScoreTile.module.css";
 import TeamTile from "../teams/teamTile";
 import { Chip, Tooltip, Avatar, AvatarGroup } from "@mui/material";
-import { Sports, LiveTv, Update } from "@mui/icons-material";
+import { LooksOne, LooksTwo, Looks3, Looks4, Sports, LiveTv, Update } from "@mui/icons-material";
 
 export default function GameScoreTile({ game, liveDetails, users }) {
   const startTime = new Date(game.startTime);
@@ -10,6 +10,10 @@ export default function GameScoreTile({ game, liveDetails, users }) {
   const underdog = game.awayFavorite ? game.home : game.away;
   const favScore = game.awayFavorite ? liveDetails.awayScore : liveDetails.homeScore;
   const undScore = game.awayFavorite ? liveDetails.homeScore : liveDetails.awayScore;
+  const ffHighlight = favScore - game.spread > undScore ? cssStyles.highlight : "";
+  const ufHighlight = favScore - game.spread < undScore && favScore > undScore ? cssStyles.highlight : "";
+  const uuHighlight = favScore < undScore ? cssStyles.highlight : "";
+  const quarterIcons = [<LooksOne />, <LooksTwo />, <Looks3 />, <Looks4 />];
 
   const gameChip =
     liveDetails.playedStatus === "UNPLAYED" ? (
@@ -49,20 +53,47 @@ export default function GameScoreTile({ game, liveDetails, users }) {
     }
   });
 
+  const liveLabel = liveDetails.intermission
+    ? liveDetails.intermission === 2
+      ? "Halftime"
+      : "End of " + liveDetails.intermission
+    : Math.floor(liveDetails.timeRemaining / 60) + ":" + (liveDetails.timeRemaining % 60);
+
   return (
     <div className={cssStyles.gametile}>
       <div className={cssStyles.teams}>
-        <TeamTile team={favorite} home={!game.awayFavorite} score={favScore} avatars={ffAvatars} favorite />
+        <TeamTile
+          team={favorite}
+          home={!game.awayFavorite}
+          score={favScore}
+          avatars={ffAvatars}
+          favorite
+          highlight={ffHighlight}
+        />
 
-        <div className={cssStyles.spread}>
+        <div className={cssStyles.spread + " " + ufHighlight}>
           {gameChip}
 
           {game.spread === 0.5 ? "Pick'em" : "-" + game.spread}
           <AvatarGroup max={4} className={cssStyles.avatarGroup} spacing={0}>
             {ufAvatars}
           </AvatarGroup>
+          <br />
+          {liveDetails.playedStatus === "LIVE" && (
+            <Chip
+              label={liveLabel}
+              color="error"
+              icon={liveDetails.intermission ? <></> : quarterIcons[liveDetails.currentQuarter - 1]}
+            />
+          )}
         </div>
-        <TeamTile team={underdog} home={game.awayFavorite} score={undScore} avatars={uuAvatars} />
+        <TeamTile
+          team={underdog}
+          home={game.awayFavorite}
+          score={undScore}
+          avatars={uuAvatars}
+          highlight={uuHighlight}
+        />
       </div>
       <div className={cssStyles.gamelocation}>
         {game.location + " - " + startTime.toLocaleDateString() + " - " + startTime.toLocaleTimeString()}

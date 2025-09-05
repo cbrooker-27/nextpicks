@@ -48,6 +48,8 @@ export async function getGamesForWeek(week) {
       awayScore: game.score.awayScoreTotal,
       playedStatus: game.schedule.playedStatus,
       currentQuarter: game.score.currentQuarter,
+      timeRemaining: game.score.currentQuarterSecondsRemaining,
+      intermission: game.score.currentIntermission,
     };
   });
   simpleGames.sort((a, b) => a._id - b._id);
