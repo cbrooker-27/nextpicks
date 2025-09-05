@@ -41,7 +41,7 @@ export default function Home() {
       {usersWhoPicked.map((user) => (
         <div key={user.name}>{user.name}</div>
       ))}
-      <p>Users who didn't pick yet this week:</p>
+      <p>Users who did not pick yet this week:</p>
       {usersForThisSeason
         .filter((user) => !usersWhoPicked.includes(user))
         .map((user) => (

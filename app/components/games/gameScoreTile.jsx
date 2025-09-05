@@ -13,7 +13,7 @@ export default function GameScoreTile({ game, liveDetails, users }) {
   const ffHighlight = favScore - game.spread > undScore ? cssStyles.highlight : "";
   const ufHighlight = favScore - game.spread < undScore && favScore > undScore ? cssStyles.highlight : "";
   const uuHighlight = favScore < undScore ? cssStyles.highlight : "";
-  const quarterIcons = [<LooksOne />, <LooksTwo />, <Looks3 />, <Looks4 />];
+  const quarterIcons = [<LooksOne key="1" />, <LooksTwo key="2" />, <Looks3 key="3" />, <Looks4 key="4" />];
 
   const gameChip =
     liveDetails.playedStatus === "UNPLAYED" ? (
