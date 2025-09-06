@@ -25,6 +25,10 @@ export const getUserFromDbWithEmail = async (emailAddress) => {
   client.close();
   return user;
 };
+export const getThisYearsActiveUsers = async () => {
+  const users = JSON.parse(await getAllUserFromDb());
+  return JSON.stringify(users.filter((user) => user.activeSeasons?.includes("2025")));
+};
 
 export const getCurrentWeek = async () => {
   const client = await connectToDatabase();

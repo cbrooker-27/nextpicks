@@ -75,7 +75,7 @@ export default function GameScoreTile({ game, liveDetails, users }) {
           {gameChip}
 
           {game.spread === 0.5 ? "Pick'em" : "-" + game.spread}
-          <AvatarGroup max={4} className={cssStyles.avatarGroup} spacing={0}>
+          <AvatarGroup max={5} className={cssStyles.avatarGroup} spacing={0}>
             {ufAvatars}
           </AvatarGroup>
           <br />
