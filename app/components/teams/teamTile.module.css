@@ -21,9 +21,9 @@
 }
 
 .score {
-    font-size: xx-large;
+    font-size: 2rem;
     text-align: center;
-    color: white;
+    color: darkgoldenrod;
 }
 
 .teamContainer .avatarGroup {

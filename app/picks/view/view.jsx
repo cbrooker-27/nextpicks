@@ -77,7 +77,8 @@ export default function EnterScores() {
                   </Avatar>
                 }
                 label={user.points}
-                variant="outlined"
+                variant={user.name === session?.user?.name ? "filled" : "outlined"}
+                color={user.name === session?.user?.name ? "primary" : "default"}
               />
             </Tooltip>
           ))}
@@ -111,6 +112,10 @@ function updateUserPoints(pickedGames, gamesWithScores, activeUsers) {
     } else if (favScore - game.spread < undScore && favScore > undScore) {
       gamePoints["ff"] = 1;
       gamePoints["uf"] = 2;
+      gamePoints["uu"] = 1;
+    } else if (favScore - game.spread < undScore && favScore === undScore) {
+      gamePoints["ff"] = 0;
+      gamePoints["uf"] = 1;
       gamePoints["uu"] = 1;
     } else {
       gamePoints["ff"] = 0;

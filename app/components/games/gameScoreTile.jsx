@@ -11,7 +11,12 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser }) 
   const favScore = game.awayFavorite ? liveDetails.awayScore : liveDetails.homeScore;
   const undScore = game.awayFavorite ? liveDetails.homeScore : liveDetails.awayScore;
   const ffHighlight = favScore - game.spread > undScore ? cssStyles.highlight : "";
-  const ufHighlight = favScore - game.spread < undScore && favScore > undScore ? cssStyles.highlight : "";
+  const ufHighlight =
+    favScore - game.spread < undScore && favScore > undScore
+      ? cssStyles.highlight
+      : favScore === undScore
+      ? cssStyles.highlightTies
+      : "";
   const uuHighlight = favScore < undScore ? cssStyles.highlight : "";
   const quarterIcons = [<LooksOne key="1" />, <LooksTwo key="2" />, <Looks3 key="3" />, <Looks4 key="4" />];
 
@@ -68,7 +73,7 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser }) 
     ? liveDetails.intermission === 2
       ? "Halftime"
       : "End of " + liveDetails.intermission
-    : Math.floor(liveDetails.timeRemaining / 60) + ":" + (liveDetails.timeRemaining % 60);
+    : Math.floor(liveDetails.timeRemaining / 60) + ":" + (liveDetails.timeRemaining % 60).toString().padStart(2, "0");
 
   return (
     <div className={cssStyles.gametile}>
@@ -79,10 +84,10 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser }) 
           score={favScore}
           avatars={ffAvatars}
           favorite
-          highlight={ffHighlight}
+          highlight={liveDetails.playedStatus === "UNPLAYED" ? null : ffHighlight}
         />
 
-        <div className={cssStyles.spread + " " + ufHighlight}>
+        <div className={cssStyles.spread + " " + (liveDetails.playedStatus === "UNPLAYED" ? "" : ufHighlight)}>
           {gameChip}
 
           {game.spread === 0.5 ? "Pick'em" : "-" + game.spread}
@@ -94,7 +99,7 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser }) 
             <Chip
               label={liveLabel}
               color="error"
-              icon={liveDetails.intermission ? <></> : quarterIcons[liveDetails.currentQuarter - 1]}
+              icon={liveDetails.intermission ? null : quarterIcons[liveDetails.currentQuarter - 1]}
             />
           )}
         </div>
@@ -103,7 +108,7 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser }) 
           home={game.awayFavorite}
           score={undScore}
           avatars={uuAvatars}
-          highlight={uuHighlight}
+          highlight={liveDetails.playedStatus === "UNPLAYED" ? null : uuHighlight}
         />
       </div>
       <div className={cssStyles.gamelocation}>
