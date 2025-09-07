@@ -1,4 +1,9 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+  eslint: {
+    // Only run ESLint on the source directories
+    dirs: ["pages", "app", "components", "lib", "src"],
+  },
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

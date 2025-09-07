@@ -91,7 +91,8 @@ export async function getPickableGames(week) {
   const findResult = db.collection("games").find({ week: week.week, season: week.season });
   const games = await findResult.toArray();
   // @ts-ignore
-  games.sort((a, b) => a._id - b._id);
+  games.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+  // games.sort((a, b) => a._id - b._id);
   client.close();
   return games;
 }
@@ -111,6 +112,7 @@ export async function getThisWeeksPickedGames() {
     })
   );
   // @ts-ignore
-  pickedGames.sort((a, b) => a._id - b._id);
+  // pickedGames.sort((a, b) => a._id - b._id);
+  pickedGames.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
   return JSON.stringify(pickedGames);
 }

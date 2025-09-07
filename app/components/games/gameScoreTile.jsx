@@ -4,7 +4,7 @@ import TeamTile from "../teams/teamTile";
 import { Chip, Tooltip, Avatar, AvatarGroup } from "@mui/material";
 import { LooksOne, LooksTwo, Looks3, Looks4, Sports, LiveTv, Update } from "@mui/icons-material";
 
-export default function GameScoreTile({ game, liveDetails, users }) {
+export default function GameScoreTile({ game, liveDetails, users, activeUser }) {
   const startTime = new Date(game.startTime);
   const favorite = game.awayFavorite ? game.away : game.home;
   const underdog = game.awayFavorite ? game.home : game.away;
@@ -27,31 +27,42 @@ export default function GameScoreTile({ game, liveDetails, users }) {
   const generateAvatars = (choice, index) => {
     const user = users.find((user) => user.name === choice.userId);
     return (
-      <Tooltip key={choice.userId + index} title={choice.userId} arrow>
-        <Avatar key={choice.userId + index} sx={{ width: 24, height: 24 }} alt={choice.userId} src={user?.image}>
+      <Tooltip key={choice.userId} title={choice.userId} arrow>
+        <Avatar
+          className={choice.userId === activeUser?.name ? cssStyles.hilitedAvatar : cssStyles.avatar}
+          key={choice.userId}
+          alt={choice.userId}
+          src={user?.image}
+        >
           {user?.name.substring(0, 1)}
         </Avatar>
       </Tooltip>
     );
   };
 
-  const ffAvatars = game.userChoices.map((choice, index) => {
-    if (choice.choice === "ff") {
-      return generateAvatars(choice, index);
-    }
-  });
+  const ffAvatars = game.userChoices
+    .map((choice, index) => {
+      if (choice.choice === "ff") {
+        return generateAvatars(choice, index);
+      }
+    })
+    .sort((a, b) => (a.key === activeUser?.name ? -1 : 1));
 
-  const ufAvatars = game.userChoices.map((choice, index) => {
-    if (choice.choice === "uf") {
-      return generateAvatars(choice, index);
-    }
-  });
+  const ufAvatars = game.userChoices
+    .map((choice, index) => {
+      if (choice.choice === "uf") {
+        return generateAvatars(choice, index);
+      }
+    })
+    .sort((a, b) => (a.key === activeUser?.name ? -1 : 1));
 
-  const uuAvatars = game.userChoices.map((choice, index) => {
-    if (choice.choice === "uu") {
-      return generateAvatars(choice, index);
-    }
-  });
+  const uuAvatars = game.userChoices
+    .map((choice, index) => {
+      if (choice.choice === "uu") {
+        return generateAvatars(choice, index);
+      }
+    })
+    .sort((a, b) => (a.key === activeUser?.name ? -1 : 1));
 
   const liveLabel = liveDetails.intermission
     ? liveDetails.intermission === 2

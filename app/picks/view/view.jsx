@@ -2,9 +2,9 @@
 import { getThisWeeksGamesFromMsf } from "@/app/lib/msf";
 import { getAllUserFromDb, getThisWeeksPickedGames, getThisYearsActiveUsers } from "@/app/utils/db";
 import GameScoreTile from "@/app/components/games/gameScoreTile";
-import { Skeleton, Chip, Avatar, Tooltip } from "@mui/material";
+import { Skeleton, Chip, Avatar, Tooltip, Switch } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 
 export default function EnterScores() {
   const [pickedGames, setPickedGames] = useState([]);
@@ -12,7 +12,14 @@ export default function EnterScores() {
   const [gamesWithScores, setGamesWithScores] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeUsers, setActiveUsers] = useState([]);
+  const [showInProgress, setShowInProgress] = useState(true);
   const { data: session, status } = useSession();
+
+  // if user is not authenticated, send them to sign in
+  if (status !== "loading" && !session?.user) {
+    signIn();
+  }
+
   useEffect(() => {
     async function fetchData() {
       const fetchedPicks = await getThisWeeksPickedGames();
@@ -34,42 +41,54 @@ export default function EnterScores() {
     <Skeleton />
   ) : (
     <div>
-      <h2>Only Finals</h2>
-      {activeUsers.map((user) => (
-        <Tooltip key={user.name} title={user.name} arrow>
-          <Chip
-            key={user.name}
-            avatar={
-              <Avatar alt={user.name} src={user?.image}>
-                {user?.name.substring(0, 1)}
-              </Avatar>
-            }
-            label={user.points}
-            variant="outlined"
-          />
-        </Tooltip>
-      ))}
-      <h2>Including In-Progress</h2>
-      {activeUsers
-        .sort((a, b) => b.points + b.volatilePoints - a.points - a.volatilePoints)
-        .map((user) => (
-          <Tooltip key={user.name} title={user.name} arrow>
-            <Chip
-              key={user.name}
-              avatar={
-                <Avatar alt={user.name} src={user?.image}>
-                  {user?.name.substring(0, 1)}
-                </Avatar>
-              }
-              label={user.points + user.volatilePoints}
-              variant="outlined"
-            />
-          </Tooltip>
-        ))}
+      <Switch checked={showInProgress} onChange={() => setShowInProgress(!showInProgress)} />
+      Show points from in-progress games
+      {showInProgress ? (
+        <div>
+          <h2>Including In-Progress</h2>
+          {activeUsers
+            .sort((a, b) => b.points + b.volatilePoints - a.points - a.volatilePoints)
+            .map((user) => (
+              <Tooltip key={user.name} title={user.name} arrow>
+                <Chip
+                  key={user.name}
+                  avatar={
+                    <Avatar alt={user.name} src={user?.image}>
+                      {user?.name.substring(0, 1)}
+                    </Avatar>
+                  }
+                  label={user.points + user.volatilePoints}
+                  variant={user.name === session?.user?.name ? "filled" : "outlined"}
+                  color={user.name === session?.user?.name ? "primary" : "default"}
+                />
+              </Tooltip>
+            ))}
+        </div>
+      ) : (
+        <div>
+          <h2>Only Finals</h2>
+          {activeUsers.map((user) => (
+            <Tooltip key={user.name} title={user.name} arrow>
+              <Chip
+                key={user.name}
+                avatar={
+                  <Avatar alt={user.name} src={user?.image}>
+                    {user?.name.substring(0, 1)}
+                  </Avatar>
+                }
+                label={user.points}
+                variant="outlined"
+              />
+            </Tooltip>
+          ))}
+        </div>
+      )}
       <br />
       {pickedGames.map((game) => {
         const gameData = gamesWithScores.find((g) => g._id === game._id);
-        return <GameScoreTile game={game} liveDetails={gameData} key={game._id} users={users} />;
+        return (
+          <GameScoreTile game={game} liveDetails={gameData} key={game._id} users={users} activeUser={session?.user} />
+        );
       })}
     </div>
   );

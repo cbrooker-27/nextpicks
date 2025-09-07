@@ -29,6 +29,7 @@
 }
 
 .spread {
+    width: 115px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -68,4 +69,15 @@
     flex-direction: column-reverse;
     width: 30px;
     align-items: center;
+}
+
+.gametile :global(.MuiAvatarGroup-root) .avatar {
+    width: 24px;
+    height: 24px;
+}
+
+.gametile :global(.MuiAvatarGroup-root) .hilitedAvatar {
+    border: 3px solid lightskyblue;
+    width: 36px;
+    height: 36px;
 }
