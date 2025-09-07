@@ -125,7 +125,7 @@ function updateUserPoints(pickedGames, gamesWithScores, activeUsers) {
     activeUsers.forEach((user) => {
       const userChoice = game.userChoices.find((choice) => choice.userId === user.name);
 
-      if (gameData.playedStatus === "COMPLETED") {
+      if (gameData.playedStatus.startsWith("COMPLETED")) {
         user.points += gamePoints[userChoice?.choice] || 0;
       } else if (gameData.playedStatus === "LIVE") {
         user.volatilePoints += gamePoints[userChoice?.choice] || 0;
