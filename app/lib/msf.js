@@ -7,7 +7,7 @@ function findTeam(team) {
 
 export async function getThisWeeksGamesFromMsf() {
   const currentWeek = await getCurrentWeek();
-  return await getGamesForWeek(currentWeek);
+  return await getGamesForWeekFromMsf(currentWeek);
 }
 
 function getMSFHeaders() {
@@ -16,7 +16,7 @@ function getMSFHeaders() {
   return headers;
 }
 
-export async function getGamesForWeek(week) {
+export async function getGamesForWeekFromMsf(week) {
   const msfUrl =
     "" +
     process.env.MYSPORTSFEED_BASE_URL +

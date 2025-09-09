@@ -45,7 +45,6 @@ export default function ResponsiveDrawer(props) {
           itemname: "Standings",
           icon: Leaderboard,
           target: "/picks/standings",
-          disabled: true,
         },
         {
           itemname: "Previous Weeks",

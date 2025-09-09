@@ -30,15 +30,6 @@ export const getThisYearsActiveUsers = async () => {
   return JSON.stringify(users.filter((user) => user.activeSeasons?.includes("2025")));
 };
 
-export const getCurrentWeek = async () => {
-  const client = await connectToDatabase();
-  const db = client.db("picks");
-  const week = await db.collection("currentWeek").findOne();
-  console.log(week);
-  client.close();
-  return { week: week.week, season: week.season };
-};
-
 export const updateUser = async (user) => {
   const client = await connectToDatabase();
   const db = client.db("picks");
@@ -46,6 +37,15 @@ export const updateUser = async (user) => {
   console.log("updated user: " + updatedUser);
   client.close();
   return updatedUser;
+};
+
+export const getCurrentWeek = async () => {
+  const client = await connectToDatabase();
+  const db = client.db("picks");
+  const week = await db.collection("currentWeek").findOne();
+  console.log(week);
+  client.close();
+  return { week: week.week, season: week.season };
 };
 
 export const updateCurrentWeek = async (newWeek) => {
@@ -99,6 +99,9 @@ export async function getPickableGames(week) {
 
 export async function getThisWeeksPickedGames() {
   const week = await getCurrentWeek();
+  return await getPickedGames(week);
+}
+export async function getPickedGames(week) {
   const games = await getPickableGames(week);
 
   const pickedGames = await Promise.all(
