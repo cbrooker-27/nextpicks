@@ -19,8 +19,8 @@ export default function EnterScores() {
 
   useEffect(() => {
     async function fetchData() {
-      const fetchedPicks = await getPickedGames(1);
-      const gamesWithScores = await getGamesForWeekFromMsf(1);
+      const fetchedPicks = await getPickedGames({ week: 1, season: 2025 });
+      const gamesWithScores = await getGamesForWeekFromMsf({ week: "1", season: "2025" });
       const activeUsers = await getThisYearsActiveUsers();
       setActiveUsers(JSON.parse(activeUsers));
       setPickedGames(JSON.parse(fetchedPicks));

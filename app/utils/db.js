@@ -101,6 +101,7 @@ export async function getThisWeeksPickedGames() {
   const week = await getCurrentWeek();
   return await getPickedGames(week);
 }
+
 export async function getPickedGames(week) {
   const games = await getPickableGames(week);
 
