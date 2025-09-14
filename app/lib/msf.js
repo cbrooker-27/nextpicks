@@ -25,18 +25,17 @@ export async function getGamesForWeekFromMsf(week) {
     (week.season + 1) +
     "-regular" +
     // "current" + doesn't work in the offseason
-    // "latest" +
     "/week/" +
     week.week +
     "/games.json";
-  console.log("msfURL:" + msfUrl);
+  // console.log("msfURL:" + msfUrl);
   const headers = getMSFHeaders();
   const response = await fetch(msfUrl, { method: "GET", headers: headers });
   const resJson = await response.json();
   const games = resJson.games;
   const teams = resJson.references.teamReferences;
   const simpleGames = games.map((game) => {
-    console.log(game);
+    // console.log(game);
     return {
       _id: game.schedule.id,
       week: game.schedule.week,
@@ -54,4 +53,27 @@ export async function getGamesForWeekFromMsf(week) {
   });
   simpleGames.sort((a, b) => a._id - b._id);
   return simpleGames;
+}
+
+export async function getTeamStatisticsFromMsf(week) {
+  const msfUrl = `${process.env.MYSPORTSFEED_BASE_URL}${week.season}-${
+    week.season + 1
+  }-regular/standings.json?stats=W,L,T,PF,PA`;
+  console.log("msfURL:" + msfUrl);
+  const headers = getMSFHeaders();
+  const response = await fetch(msfUrl, { method: "GET", headers: headers });
+  const resJson = await response.json();
+  const teams = resJson.teams;
+  const simpleTeams = teams.map((team) => {
+    // console.log(game);
+    return {
+      _id: team.team.id,
+      wins: team.stats.standings.wins,
+      losses: team.stats.standings.losses,
+      ties: team.stats.standings.ties,
+      pointsFor: team.stats.standings.pointsFor,
+      pointsAgainst: team.stats.standings.pointsAgainst,
+    };
+  });
+  return simpleTeams;
 }

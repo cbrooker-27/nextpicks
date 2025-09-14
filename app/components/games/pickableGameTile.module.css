@@ -29,7 +29,9 @@
 .spread {
     display: inline-block;
     font-size: 2rem;
-    vertical-align: middle;
+    vertical-align: bottom;
+    width: 65px;
+    text-align: center;
 }
 
 .choices { display: block; width: 100%}

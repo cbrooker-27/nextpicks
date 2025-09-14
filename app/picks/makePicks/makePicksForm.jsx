@@ -13,7 +13,7 @@ import { useState } from "react";
 // a message saying picks are in progress (some kind of loading thingy)
 // then send them to view picks
 
-export default function MakePicksForm(props) {
+export default function MakePicksForm({ games, teamDetails }) {
   const [readyToSubmit, setReadyToSubmit] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { data: session, status } = useSession();
@@ -25,8 +25,6 @@ export default function MakePicksForm(props) {
   if (status === "unauthenticated") {
     signIn();
   }
-
-  const games = props.games;
 
   function choiceChanged(index, choice) {
     console.log(`Game: ${games[index]._id}, Choice: ${choice}`);
@@ -87,7 +85,13 @@ export default function MakePicksForm(props) {
         )}
       </div>
       {games.map((game, index) => (
-        <PickableGameTile game={game} key={game._id} index={index} choiceChanged={choiceChanged} />
+        <PickableGameTile
+          game={game}
+          key={game._id}
+          index={index}
+          choiceChanged={choiceChanged}
+          teamDetails={teamDetails}
+        />
       ))}
     </div>
   );

@@ -3,11 +3,16 @@ import TeamTile from "../teams/teamTile";
 import { useState } from "react";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import { FormControlLabel, Switch } from "@mui/material";
 
-export default function PickableGameTile({ game, index, choiceChanged }) {
+export default function PickableGameTile({ game, index, choiceChanged, teamDetails }) {
   const [choice, setChoice] = useState("");
+  const [checked, setChecked] = useState(false);
   const favorite = game.awayFavorite ? game.away : game.home;
   const underdog = game.awayFavorite ? game.home : game.away;
+  favorite.stats = teamDetails.find((team) => team._id === favorite.id);
+  underdog.stats = teamDetails.find((team) => team._id === underdog.id);
+
   let ffStyle = { color: "white" };
   let ufStyle = { color: "white" };
   let uuStyle = { color: "white" };
@@ -37,7 +42,7 @@ export default function PickableGameTile({ game, index, choiceChanged }) {
     <div className={cssStyles.gametile}>
       <div className={cssStyles.gamemain}>
         <div className={cssStyles.gameteam}>
-          <TeamTile team={favorite} home={!game.awayFavorite} />
+          <TeamTile team={favorite} home={!game.awayFavorite} showDetails={checked} />
         </div>
         <div className={cssStyles.spread}>
           {game.spread === 0.5 ? (
@@ -49,9 +54,17 @@ export default function PickableGameTile({ game, index, choiceChanged }) {
           ) : (
             game.spread
           )}
+          <br />
+
+          <FormControlLabel
+            labelPlacement="bottom"
+            control={<Switch size="small" checked={checked} onChange={() => setChecked(!checked)} />}
+            label="Details"
+            style={{ paddingTop: "20px", paddingBottom: "45px" }}
+          />
         </div>
         <div className={cssStyles.gameteam}>
-          <TeamTile team={underdog} home={game.awayFavorite} />
+          <TeamTile team={underdog} home={game.awayFavorite} showDetails={checked} />
         </div>
       </div>
       <ToggleButtonGroup

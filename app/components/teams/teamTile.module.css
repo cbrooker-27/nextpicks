@@ -20,6 +20,15 @@
     text-align: center;
 }
 
+.teamStats {
+   align-self: center;
+   vertical-align: top;
+   border-radius: 5px;
+   padding: 2px;
+   width: 200px;
+   height: 210px;
+}
+
 .score {
     font-size: 2rem;
     text-align: center;
