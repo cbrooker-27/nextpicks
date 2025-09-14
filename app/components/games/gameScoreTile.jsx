@@ -4,7 +4,7 @@ import TeamTile from "../teams/teamTile";
 import { Chip, Tooltip, Avatar, AvatarGroup } from "@mui/material";
 import { LooksOne, LooksTwo, Looks3, Looks4, Sports, LiveTv, Update } from "@mui/icons-material";
 
-export default function GameScoreTile({ game, liveDetails, users, activeUser }) {
+export default function GameScoreTile({ game, liveDetails, users, activeUser, teamDetails }) {
   const startTime = new Date(game.startTime);
   const favorite = game.awayFavorite ? game.away : game.home;
   const underdog = game.awayFavorite ? game.home : game.away;
@@ -19,6 +19,8 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser }) 
       : "";
   const uuHighlight = favScore < undScore ? cssStyles.highlight : "";
   const quarterIcons = [<LooksOne key="1" />, <LooksTwo key="2" />, <Looks3 key="3" />, <Looks4 key="4" />];
+  favorite.stats = teamDetails.find((team) => team._id === favorite.id);
+  underdog.stats = teamDetails.find((team) => team._id === underdog.id);
 
   const gameChip =
     liveDetails.playedStatus === "UNPLAYED" ? (

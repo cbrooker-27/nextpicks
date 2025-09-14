@@ -1,6 +1,6 @@
 "use client";
-import { getThisWeeksGamesFromMsf } from "@/app/lib/msf";
-import { getAllUserFromDb, getThisWeeksPickedGames, getThisYearsActiveUsers } from "@/app/utils/db";
+import { getTeamStatisticsFromMsf, getThisWeeksGamesFromMsf } from "@/app/lib/msf";
+import { getAllUserFromDb, getCurrentWeek, getThisWeeksPickedGames, getThisYearsActiveUsers } from "@/app/utils/db";
 import GameScoreTile from "@/app/components/games/gameScoreTile";
 import { Skeleton, Chip, Avatar, Tooltip, Switch } from "@mui/material";
 import { useEffect, useState } from "react";
@@ -13,6 +13,7 @@ export default function EnterScores() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeUsers, setActiveUsers] = useState([]);
   const [showInProgress, setShowInProgress] = useState(true);
+  const [teamDetails, setTeamDetails] = useState([]);
   const { data: session, status } = useSession();
 
   // if user is not authenticated, send them to sign in
@@ -22,10 +23,13 @@ export default function EnterScores() {
 
   useEffect(() => {
     async function fetchData() {
+      const week = await getCurrentWeek();
       const fetchedPicks = await getThisWeeksPickedGames();
       const users = await getAllUserFromDb();
       const gamesWithScores = await getThisWeeksGamesFromMsf();
       const activeUsers = await getThisYearsActiveUsers();
+      const teamDetails = await getTeamStatisticsFromMsf(week);
+      setTeamDetails(teamDetails);
       setActiveUsers(JSON.parse(activeUsers));
       setUsers(JSON.parse(users));
       setPickedGames(JSON.parse(fetchedPicks));
@@ -88,7 +92,14 @@ export default function EnterScores() {
       {pickedGames.map((game) => {
         const gameData = gamesWithScores.find((g) => g._id === game._id);
         return (
-          <GameScoreTile game={game} liveDetails={gameData} key={game._id} users={users} activeUser={session?.user} />
+          <GameScoreTile
+            game={game}
+            liveDetails={gameData}
+            key={game._id}
+            users={users}
+            activeUser={session?.user}
+            teamDetails={teamDetails}
+          />
         );
       })}
     </div>
