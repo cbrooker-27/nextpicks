@@ -37,16 +37,18 @@ export default function TeamTile({
           {/* <Collapse in={showDetails} collapsedSize={10}> */}
           {/* <Slide in={showDetails} timeout={1000} container={displayRef.current} direction="left"> */}
           {/* <Zoom in={showDetails} timeout={1000}> */}
-          <Fade in={showDetails} timeout={1000}>
-            <div
-              className={cssStyles.teamStats}
-              style={{
-                background: `linear-gradient(135deg, ${team.teamColoursHex[0]} 0%, ${team.teamColoursHex[1]} 100%)`,
-              }}
-            >
-              PF: {team.stats.pointsFor} <br /> PA: {team.stats.pointsAgainst} <br />
-            </div>
-          </Fade>
+          {showDetails && (
+            <Fade in={showDetails} timeout={1000}>
+              <div
+                className={cssStyles.teamStats}
+                style={{
+                  background: `linear-gradient(135deg, ${team.teamColoursHex[0]} 0%, ${team.teamColoursHex[1]} 100%)`,
+                }}
+              >
+                PF: {team.stats.pointsFor} <br /> PA: {team.stats.pointsAgainst} <br />
+              </div>
+            </Fade>
+          )}
           {/* </Slide> */}
           {/* </Zoom> */}
           {/* </Collapse> */}
