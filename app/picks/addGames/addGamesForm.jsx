@@ -62,6 +62,7 @@ export default function AddGamesForm(props) {
           index={index}
           spreadUpdated={gameSpreadUpdated}
           favoriteUpdated={gameFavoriteUpdated}
+          teamDetails={props.teamDetails}
         />
       ))}
     </div>
