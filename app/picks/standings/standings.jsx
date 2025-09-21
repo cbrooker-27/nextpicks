@@ -2,6 +2,7 @@ import { getGamesForWeekFromMsf } from "@/app/lib/msf";
 import { getCurrentWeek, getPickedGames, getThisYearsActiveUsers } from "@/app/utils/db";
 import { auth, signIn } from "@/auth";
 import { Chip, Avatar, Tooltip } from "@mui/material";
+import { BarChart, BarChartProps } from "@mui/x-charts/BarChart";
 // import { useEffect, useState } from "react";
 // import { signIn, useSession } from "next-auth/react";
 
@@ -22,7 +23,7 @@ export default async function Standings() {
     const gamesWithScores = await getGamesForWeekFromMsf({ week: "" + i, season: "" + week.season });
 
     activeUsers.forEach((user) => {
-      user.points[i] = 0;
+      user["week" + i] = 0;
     });
 
     pickedGames.map((game) => {
@@ -51,7 +52,7 @@ export default async function Standings() {
         const userChoice = game.userChoices.find((choice) => choice.userId === user.name);
 
         if (gameData.playedStatus.startsWith("COMPLETED")) {
-          user.points[i] += gamePoints[userChoice?.choice] || 0;
+          user["week" + i] += gamePoints[userChoice?.choice] || 0;
           user.totalPoints += gamePoints[userChoice?.choice] || 0;
         } else if (gameData.playedStatus === "LIVE") {
           console.log("Game in progress, no points awarded yet...should not get here");
@@ -62,23 +63,49 @@ export default async function Standings() {
   activeUsers.sort((a, b) => b.totalPoints - a.totalPoints);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "5px", width: "150px" }}>
-      <h2>Standings</h2>
-      {activeUsers.map((user) => (
-        <Tooltip key={user.name} title={"[" + user.points.slice(1).join(", ") + "]"} arrow>
-          <Chip
-            key={user.name}
-            avatar={
-              <Avatar alt={user.name} src={user?.image}>
-                {user?.name.substring(0, 1)}
-              </Avatar>
-            }
-            label={user.name + " - " + user.totalPoints}
-            variant={user.name === session?.user?.name ? "filled" : "outlined"}
-            color={user.name === session?.user?.name ? "primary" : "default"}
-          />
-        </Tooltip>
-      ))}
-    </div>
+    <>
+      <div style={{ display: "flex", flexDirection: "column", gap: "5px", width: "150px" }}>
+        <h2>Standings</h2>
+        {activeUsers.map((user) => (
+          <Tooltip key={user.name} title={"[" + user.points.slice(1).join(", ") + "]"} arrow>
+            <Chip
+              key={user.name}
+              avatar={
+                <Avatar alt={user.name} src={user?.image}>
+                  {user?.name.substring(0, 1)}
+                </Avatar>
+              }
+              label={user.name + " - " + user.totalPoints}
+              variant={user.name === session?.user?.name ? "filled" : "outlined"}
+              color={user.name === session?.user?.name ? "primary" : "default"}
+            />
+          </Tooltip>
+        ))}
+      </div>
+      <div style={{ marginTop: "50px", width: "100%" }}>
+        <BarChart
+          dataset={activeUsers}
+          series={[
+            { dataKey: "week1", label: "Week 1", stack: "points" },
+            { dataKey: "week2", label: "Week 2", stack: "points" },
+          ]}
+          yAxis={[{ scaleType: "band", dataKey: "name" }]}
+          {...config}
+        />
+      </div>
+    </>
   );
 }
+
+const valueFormatter = (value, context) => {
+  return value.length > 10 ? value.substring(0, 10) + "..." : value;
+};
+
+const config = {
+  height: 350,
+  margin: { left: 0 },
+  xAxis: [{ width: 50 }],
+  // hideLegend: true,
+  borderRadius: 10,
+  layout: "horizontal",
+};
