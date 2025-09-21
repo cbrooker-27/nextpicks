@@ -2,7 +2,7 @@ import { getGamesForWeekFromMsf } from "@/app/lib/msf";
 import { getCurrentWeek, getPickedGames, getThisYearsActiveUsers } from "@/app/utils/db";
 import { auth, signIn } from "@/auth";
 import { Chip, Avatar, Tooltip } from "@mui/material";
-import { BarChart, BarChartProps } from "@mui/x-charts/BarChart";
+import { BarChart } from "@mui/x-charts/BarChart";
 // import { useEffect, useState } from "react";
 // import { signIn, useSession } from "next-auth/react";
 
@@ -11,6 +11,7 @@ export default async function Standings() {
 
   const week = await getCurrentWeek();
   const activeUsers = JSON.parse(await getThisYearsActiveUsers());
+  const series = [];
 
   activeUsers.forEach((user) => {
     user.totalPoints = 0;
@@ -19,6 +20,7 @@ export default async function Standings() {
   });
 
   for (let i = 1; i < week.week; i++) {
+    series.push({ dataKey: "week" + i, label: "Week " + i, stack: "points" });
     const pickedGames = JSON.parse(await getPickedGames({ week: i, season: week.season }));
     const gamesWithScores = await getGamesForWeekFromMsf({ week: "" + i, season: "" + week.season });
 
@@ -85,27 +87,15 @@ export default async function Standings() {
       <div style={{ marginTop: "50px", width: "100%" }}>
         <BarChart
           dataset={activeUsers}
-          series={[
-            { dataKey: "week1", label: "Week 1", stack: "points" },
-            { dataKey: "week2", label: "Week 2", stack: "points" },
-          ]}
+          series={series}
+          //xAxis={[{ width: 50 }]}
           yAxis={[{ scaleType: "band", dataKey: "name" }]}
-          {...config}
+          layout={"horizontal"}
+          height={550}
+          borderRadius={10}
+          margin={{ left: 0 }}
         />
       </div>
     </>
   );
 }
-
-const valueFormatter = (value, context) => {
-  return value.length > 10 ? value.substring(0, 10) + "..." : value;
-};
-
-const config = {
-  height: 350,
-  margin: { left: 0 },
-  xAxis: [{ width: 50 }],
-  // hideLegend: true,
-  borderRadius: 10,
-  layout: "horizontal",
-};
