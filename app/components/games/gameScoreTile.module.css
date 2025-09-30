@@ -79,6 +79,12 @@
     height: 24px;
 }
 
+.gametile :global(.MuiAvatarGroup-root) .npcAvatar {
+    width: 24px;
+    height: 24px;
+    border: 2px solid orange;
+}
+
 .gametile :global(.MuiAvatarGroup-root) .hilitedAvatar {
     border: 3px solid lightskyblue;
     width: 36px;

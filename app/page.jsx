@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { getAllUserFromDb, getCurrentWeek, getThisWeeksPickedGames } from "./utils/db";
 import { useSession } from "next-auth/react";
 import { Skeleton } from "@mui/material";
-import { set } from "zod";
 
 export default function Home() {
   const [pickedGames, setPickedGames] = useState([]);
@@ -44,6 +43,7 @@ export default function Home() {
       <p>Users who did not pick yet this week:</p>
       {usersForThisSeason
         .filter((user) => !usersWhoPicked.includes(user))
+        .filter((user) => user.npc !== true)
         .map((user) => (
           <div key={user.name}>{user.name}</div>
         ))}

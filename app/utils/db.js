@@ -6,21 +6,21 @@ const uri = `mongodb+srv://${process.env.MONGODB_USER}:${process.env.MONGODB_PWD
 
 export const getUserFromDb = async (username) => {
   const client = await connectToDatabase();
-  const db = client.db("picks");
+  const db = client.db(process.env.MONGODB_DB || "picks");
   const user = await db.collection("users").findOne({ name: username });
   client.close();
   return user;
 };
 export const getAllUserFromDb = async () => {
   const client = await connectToDatabase();
-  const db = client.db("picks");
+  const db = client.db(process.env.MONGODB_DB || "picks");
   const users = await db.collection("users").find().toArray();
   client.close();
   return JSON.stringify(users);
 };
 export const getUserFromDbWithEmail = async (emailAddress) => {
   const client = await connectToDatabase();
-  const db = client.db("picks");
+  const db = client.db(process.env.MONGODB_DB || "picks");
   const user = await db.collection("users").findOne({ email: emailAddress });
   client.close();
   return user;
@@ -32,7 +32,7 @@ export const getThisYearsActiveUsers = async () => {
 
 export const updateUser = async (user) => {
   const client = await connectToDatabase();
-  const db = client.db("picks");
+  const db = client.db(process.env.MONGODB_DB || "picks");
   const updatedUser = await db.collection("users").updateOne({ _id: user._id }, { $set: user });
   console.log("updated user: " + updatedUser);
   client.close();
@@ -41,7 +41,7 @@ export const updateUser = async (user) => {
 
 export const getCurrentWeek = async () => {
   const client = await connectToDatabase();
-  const db = client.db("picks");
+  const db = client.db(process.env.MONGODB_DB || "picks");
   const week = await db.collection("currentWeek").findOne();
   console.log(week);
   client.close();
@@ -50,7 +50,7 @@ export const getCurrentWeek = async () => {
 
 export const updateCurrentWeek = async (newWeek) => {
   const client = await connectToDatabase();
-  const db = client.db("picks");
+  const db = client.db(process.env.MONGODB_DB || "picks");
   const updatedWeek = await db.collection("currentWeek").updateOne({}, { $set: { week: newWeek } });
   console.log("updated week: " + updatedWeek);
   client.close();
@@ -66,19 +66,47 @@ export async function addGames(games) {
   const week = await getCurrentWeek();
   // console.log("Adding games for week", week);
   const season = week.season;
-  // console.log("Adding games for season", season);
-  games.map(async (game) => {
-    const client = await connectToDatabase();
-    const db = client.db("picks");
-    game.season = season;
-    const insertResult = await db.collection("games").insertOne(game);
-    client.close();
-  });
+  console.log("Adding games for season and week", season, week.week);
+  try {
+    await Promise.all(
+      games.map(async (game) => {
+        const client = await connectToDatabase();
+        const db = client.db(process.env.MONGODB_DB || "picks");
+        game.season = season;
+        const insertResult = await db.collection("games").insertOne(game);
+        if (insertResult.acknowledged) {
+          console.log("Inserted game: ", game.gameId);
+          await db
+            .collection("userChoices")
+            .insertOne({ gameId: game._id, userId: "Freddy", choice: "ff", selectionTime: new Date().toISOString() });
+          await db
+            .collection("userChoices")
+            .insertOne({ gameId: game._id, userId: "Underdog", choice: "uu", selectionTime: new Date().toISOString() });
+          await db
+            .collection("userChoices")
+            .insertOne({ gameId: game._id, userId: "Sammy", choice: "uf", selectionTime: new Date().toISOString() });
+          //need to randomize Robbie's choice
+          const choices = game.spread === 0.5 ? ["ff", "uu"] : ["ff", "uf", "uu"];
+          const randomChoice = choices[Math.floor(Math.random() * choices.length)];
+          await db.collection("userChoices").insertOne({
+            gameId: game._id,
+            userId: "Robbie",
+            choice: randomChoice,
+            selectionTime: new Date().toISOString(),
+          });
+        }
+        client.close();
+      })
+    );
+    console.log("All games added successfully.");
+  } catch (error) {
+    console.error("Error adding games:", error);
+  }
 }
 
 export async function addUserChoices(choices) {
   const client = await connectToDatabase();
-  const db = client.db("picks");
+  const db = client.db(process.env.MONGODB_DB || "picks");
   const insertResult = await db.collection("userChoices").insertMany(choices);
   client.close();
   console.log("Inserted choices: ", insertResult);
@@ -87,7 +115,7 @@ export async function addUserChoices(choices) {
 
 export async function getPickableGames(week) {
   const client = await connectToDatabase();
-  const db = client.db("picks");
+  const db = client.db(process.env.MONGODB_DB || "picks");
   const findResult = db.collection("games").find({ week: week.week, season: week.season });
   const games = await findResult.toArray();
   // @ts-ignore
@@ -108,7 +136,7 @@ export async function getPickedGames(week) {
   const pickedGames = await Promise.all(
     games.map(async (game) => {
       const client = await connectToDatabase();
-      const db = client.db("picks");
+      const db = client.db(process.env.MONGODB_DB || "picks");
       const findResult = db.collection("userChoices").find({ gameId: game._id });
       game.userChoices = await findResult.toArray();
       client.close();

@@ -31,12 +31,18 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
       <Chip label="Final" color="success" icon={<Sports />} />
     );
 
-  const generateAvatars = (choice, index) => {
+  const generateAvatar = (choice) => {
     const user = users.find((user) => user.name === choice.userId);
     return (
       <Tooltip key={choice.userId} title={choice.userId} arrow>
         <Avatar
-          className={choice.userId === activeUser?.name ? cssStyles.hilitedAvatar : cssStyles.avatar}
+          className={
+            choice.userId === activeUser?.name
+              ? cssStyles.hilitedAvatar
+              : user.npc
+              ? cssStyles.npcAvatar
+              : cssStyles.avatar
+          }
           key={choice.userId}
           alt={choice.userId}
           src={user?.image}
@@ -48,25 +54,25 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
   };
 
   const ffAvatars = game.userChoices
-    .map((choice, index) => {
+    .map((choice) => {
       if (choice.choice === "ff") {
-        return generateAvatars(choice, index);
+        return generateAvatar(choice);
       }
     })
     .sort((a, b) => (a.key === activeUser?.name ? -1 : 1));
 
   const ufAvatars = game.userChoices
-    .map((choice, index) => {
+    .map((choice) => {
       if (choice.choice === "uf") {
-        return generateAvatars(choice, index);
+        return generateAvatar(choice);
       }
     })
     .sort((a, b) => (a.key === activeUser?.name ? -1 : 1));
 
   const uuAvatars = game.userChoices
-    .map((choice, index) => {
+    .map((choice) => {
       if (choice.choice === "uu") {
-        return generateAvatars(choice, index);
+        return generateAvatar(choice);
       }
     })
     .sort((a, b) => (a.key === activeUser?.name ? -1 : 1));

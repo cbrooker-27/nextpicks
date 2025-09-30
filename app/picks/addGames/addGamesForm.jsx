@@ -2,12 +2,15 @@
 import { addGames } from "@/app/utils/db";
 import AddGameTile from "../../components/games/addGameTile";
 import { useState } from "react";
-import { Fab } from "@mui/material";
+import { CircularProgress, Fab } from "@mui/material";
 import { Add } from "@mui/icons-material";
+import { useRouter } from "next/navigation";
 
 export default function AddGamesForm(props) {
   const [readyToSubmit, setReadyToSubmit] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [games, setGames] = useState(props.games);
+  const router = useRouter();
 
   function emptySpread(game) {
     return game.spread == null;
@@ -15,8 +18,12 @@ export default function AddGamesForm(props) {
   async function submitClicked(event) {
     event.preventDefault();
     console.log("adding games");
+    setSubmitting(true);
     console.log(games);
-    await addGames(games);
+    const result = await addGames(games);
+    setSubmitting(false);
+    setReadyToSubmit(false);
+    router.push("/picks/view");
   }
 
   function gameSpreadUpdated(index, event) {
@@ -48,10 +55,20 @@ export default function AddGamesForm(props) {
             }}
             color="primary"
             variant="extended"
+            disabled={submitting}
             onClick={submitClicked}
           >
-            <Add />
-            Add Games
+            {submitting ? (
+              <>
+                <CircularProgress size={24} style={{ marginLeft: 8 }} />
+                Adding...
+              </>
+            ) : (
+              <>
+                <Add />
+                Add Games
+              </>
+            )}
           </Fab>
         )}
       </div>
