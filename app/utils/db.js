@@ -56,6 +56,23 @@ export const updateCurrentWeek = async (newWeek) => {
   client.close();
   return updatedWeek;
 };
+export const updateGameInDb = async (game) => {
+  const client = await connectToDatabase();
+  const db = client.db(process.env.MONGODB_DB || "picks");
+  const updatedGame = await db.collection("games").updateOne({ _id: game._id }, { $set: game });
+  console.log("updated game: " + updatedGame);
+  client.close();
+  return updatedGame;
+};
+
+export const getAllGames = async (season) => {
+  const client = await connectToDatabase();
+  const db = client.db(process.env.MONGODB_DB || "picks");
+  const findResult = db.collection("games").find({ season: season });
+  const games = await findResult.toArray();
+  client.close();
+  return games;
+};
 
 export async function connectToDatabase() {
   const client = await MongoClient.connect(uri);
@@ -75,7 +92,7 @@ export async function addGames(games) {
         game.season = season;
         const insertResult = await db.collection("games").insertOne(game);
         if (insertResult.acknowledged) {
-          console.log("Inserted game: ", game.gameId);
+          console.log("Inserted game: ", game._id);
           await db
             .collection("userChoices")
             .insertOne({ gameId: game._id, userId: "Freddy", choice: "ff", selectionTime: new Date().toISOString() });
@@ -85,6 +102,19 @@ export async function addGames(games) {
           await db
             .collection("userChoices")
             .insertOne({ gameId: game._id, userId: "Sammy", choice: "uf", selectionTime: new Date().toISOString() });
+          await db.collection("userChoices").insertOne({
+            gameId: game._id,
+            userId: "Homer",
+            choice: game.awayFavorite ? "uu" : "ff",
+            selectionTime: new Date().toISOString(),
+          });
+          await db.collection("userChoices").insertOne({
+            gameId: game._id,
+            userId: "Jackie",
+            choice: game.awayFavorite ? "ff" : "uu",
+            selectionTime: new Date().toISOString(),
+          });
+
           //need to randomize Robbie's choice
           const choices = game.spread === 0.5 ? ["ff", "uu"] : ["ff", "uf", "uu"];
           const randomChoice = choices[Math.floor(Math.random() * choices.length)];

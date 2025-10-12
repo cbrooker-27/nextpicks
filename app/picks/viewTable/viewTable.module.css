@@ -1,0 +1,12 @@
+.game {
+    border: 1px solid #000;
+    padding: 10px;
+    margin: 10px;
+    border-radius: 5px;
+}
+.team {
+    background-color: #f0f0f0;
+    display: block;
+    padding: 5px;
+    margin: 0px;
+}

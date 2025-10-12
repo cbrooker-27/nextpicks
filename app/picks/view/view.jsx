@@ -1,10 +1,17 @@
 "use client";
 import { getTeamStatisticsFromMsf, getThisWeeksGamesFromMsf } from "@/app/lib/msf";
-import { getAllUserFromDb, getCurrentWeek, getThisWeeksPickedGames, getThisYearsActiveUsers } from "@/app/utils/db";
+import {
+  getAllUserFromDb,
+  getCurrentWeek,
+  getThisWeeksPickedGames,
+  getThisYearsActiveUsers,
+  getAllGames,
+} from "@/app/utils/db";
 import GameScoreTile from "@/app/components/games/gameScoreTile";
 import { Skeleton, Chip, Avatar, Tooltip, Switch } from "@mui/material";
 import { useEffect, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
+import { SeasonStatisticsContext } from "@/app/context/SeasonStatistics";
 
 export default function EnterScores() {
   const [pickedGames, setPickedGames] = useState([]);
@@ -14,6 +21,7 @@ export default function EnterScores() {
   const [activeUsers, setActiveUsers] = useState([]);
   const [showInProgress, setShowInProgress] = useState(true);
   const [teamDetails, setTeamDetails] = useState([]);
+  const [seasonData, setSeasonData] = useState([]);
   const { data: session, status } = useSession();
 
   // if user is not authenticated, send them to sign in
@@ -29,6 +37,8 @@ export default function EnterScores() {
       const gamesWithScores = await getThisWeeksGamesFromMsf();
       const activeUsers = await getThisYearsActiveUsers();
       const teamDetails = await getTeamStatisticsFromMsf(week);
+      const seasonData = await getAllGames(week.season);
+      setSeasonData(seasonData);
       setTeamDetails(teamDetails);
       setActiveUsers(JSON.parse(activeUsers));
       setUsers(JSON.parse(users));
@@ -89,19 +99,21 @@ export default function EnterScores() {
         </div>
       )}
       <br />
-      {pickedGames.map((game) => {
-        const gameData = gamesWithScores.find((g) => g._id === game._id);
-        return (
-          <GameScoreTile
-            game={game}
-            liveDetails={gameData}
-            key={game._id}
-            users={users}
-            activeUser={session?.user}
-            teamDetails={teamDetails}
-          />
-        );
-      })}
+      <SeasonStatisticsContext.Provider value={{ seasonData: [] }}>
+        {pickedGames.map((game) => {
+          const gameData = gamesWithScores.find((g) => g._id === game._id);
+          return (
+            <GameScoreTile
+              game={game}
+              liveDetails={gameData}
+              key={game._id}
+              users={users}
+              activeUser={session?.user}
+              teamDetails={teamDetails}
+            />
+          );
+        })}
+      </SeasonStatisticsContext.Provider>
     </div>
   );
 }

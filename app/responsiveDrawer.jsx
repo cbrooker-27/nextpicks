@@ -17,7 +17,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { Avatar, ListItemAvatar, ListSubheader, Skeleton } from "@mui/material";
-import { Add, EditCalendar, EventRepeat, Leaderboard, Park, TaskAlt, Visibility } from "@mui/icons-material";
+import {
+  Add,
+  EditCalendar,
+  EventRepeat,
+  Leaderboard,
+  Park,
+  TableChart,
+  TaskAlt,
+  Visibility,
+} from "@mui/icons-material";
 
 const drawerWidth = 240;
 
@@ -40,6 +49,11 @@ export default function ResponsiveDrawer(props) {
           itemname: "View Picks",
           icon: Visibility,
           target: "/picks/view",
+        },
+        {
+          itemname: "Table View",
+          icon: TableChart,
+          target: "/picks/viewTable",
         },
         {
           itemname: "Standings",

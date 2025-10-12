@@ -7,7 +7,7 @@ import cssClasses from "./viewPicks.module.css";
 import Avatar from "@mui/material/Avatar";
 import AvatarGroup from "@mui/material/AvatarGroup";
 import { useSession } from "next-auth/react";
-import { getThisWeeksGamesFromMsf } from "@/app/lib/msf";
+import { getThisWeeksGamesFromMsf } from "@/app/lib/msf.js";
 
 export default function ViewPicks() {
   const [pickedGames, setPickedGames] = useState([]);
@@ -74,8 +74,7 @@ export default function ViewPicks() {
               </AvatarGroup>
             </div>
             <div className={cssClasses.team}>
-              {" "}
-              at{" "}
+              at
               <AvatarGroup>
                 {game.userChoices.map(
                   (choice, index) =>

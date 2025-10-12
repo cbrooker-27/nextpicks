@@ -77,7 +77,7 @@ export default function PickableGameTile({ game, index, choiceChanged, teamDetai
         <ToggleButton value="ff" aria-label="ff" style={ffStyle} className={cssStyles.choice}>
           <img alt="" src={`${favorite.officialLogoImageSrc}`} height="25px" />
           {"---"}
-          {favorite.name + " will win" + (game.spread !== 0.5 ? `by more than ${game.spread}` : "")}
+          {favorite.name + " will win" + (game.spread !== 0.5 ? ` by more than ${game.spread}` : "")}
         </ToggleButton>
         {game.spread !== 0.5 && (
           <ToggleButton value="uf" aria-label="uf" style={ufStyle} className={cssStyles.choice}>

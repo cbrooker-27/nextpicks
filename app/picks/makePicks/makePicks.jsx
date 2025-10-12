@@ -1,8 +1,9 @@
-import { getPickableGames, getCurrentWeek, getThisWeeksPickedGames } from "@/app/utils/db";
+import { getPickableGames, getCurrentWeek, getThisWeeksPickedGames, getAllGames } from "@/app/utils/db";
 
 import MakePicksForm from "./makePicksForm";
 import { auth, signIn } from "@/auth";
-import { getTeamStatisticsFromMsf } from "@/app/lib/msf";
+import { getTeamStatisticsFromMsf } from "@/app/lib/msf.js";
+import { SeasonStatisticsProvider } from "@/app/context/SeasonStatistics";
 
 export default async function MakePicks() {
   const session = await auth();
@@ -15,6 +16,7 @@ export default async function MakePicks() {
   const week = await getCurrentWeek();
   const thisWeeksPicksString = await getThisWeeksPickedGames();
   const teamDetails = await getTeamStatisticsFromMsf(week);
+  const seasonData = await getAllGames(week.season);
   if (thisWeeksPicksString) {
     const thisWeeksPicks = JSON.parse(thisWeeksPicksString);
     if (thisWeeksPicks.some((pick) => pick.userChoices.some((choice) => choice.userId === session.user.name))) {
@@ -25,7 +27,9 @@ export default async function MakePicks() {
     const thisWeeksGames = await getPickableGames(week);
 
     return thisWeeksGames.length > 0 ? (
-      <MakePicksForm games={thisWeeksGames} teamDetails={teamDetails} />
+      <SeasonStatisticsProvider value={{ seasonData }}>
+        <MakePicksForm games={thisWeeksGames} teamDetails={teamDetails} />
+      </SeasonStatisticsProvider>
     ) : (
       <div>No games found</div>
     );

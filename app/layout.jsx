@@ -1,5 +1,4 @@
 import ResponsiveDrawer from "./responsiveDrawer";
-import Footer from "@/app/components/layout/footer";
 import { SessionProvider } from "next-auth/react";
 
 export const metadata = {
@@ -21,7 +20,6 @@ export default function Layout({ children }) {
           <ResponsiveDrawer>
             {children}
             <div id="notifications"></div>
-            {/* <Footer /> */}
           </ResponsiveDrawer>
         </SessionProvider>
       </body>
