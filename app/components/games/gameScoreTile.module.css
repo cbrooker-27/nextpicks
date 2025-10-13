@@ -4,7 +4,7 @@
     border-color: blue;
     border-width: 3;
     margin: 5px;
-    width: 585px;
+    width: 525px;
     background-color: black;
     color: white;
     display: inline-block;
@@ -28,37 +28,36 @@
 .teams {
     background-color: inherit;
     display: flex;
-    
 }
 
-.spread {
+.spreadContainer {
     width: 115px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     vertical-align: middle;
     text-align: center;
     font-size: xx-large;
     color: greenyellow;
 }
-.spread input{ 
-    width: 5rem;
-    height: 3rem;
-    background: black;
-    color: white;
-    font-size: x-large;
+.spread { 
+    height: 250px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
-
-.gameteam {
-    display: inline-block;
+.avatarsTeam {
     width: 200px;
-    height: 225px;
-    background-size: 200px;
-    background-repeat: no-repeat;
-    background-position: bottom;
-    color: white;
+    display: flex;
+    justify-content: center;
+}
+
+.avatarsSpread {
+    width: 115px;
+    display: flex;
+    justify-content: center;
 }
 
 .gamelocation {
@@ -67,12 +66,19 @@
     color: greenyellow;
 }
 
-.spread .avatarGroup {
+.avatarsTeam {
+    width: 180px;
+}
+
+.avatarsTeam :global(.MuiAvatarGroup-root),
+.avatarsSpread :global(.MuiAvatarGroup-root) {
     display: flex;
-    flex-direction: column-reverse;
-    width: 30px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
     align-items: center;
 }
+
 
 .gametile :global(.MuiAvatarGroup-root) .avatar {
     width: 24px;

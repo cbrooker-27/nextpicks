@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { SeasonStatisticsContext } from "@/app/context/SeasonStatistics";
 
-export default function EnterScores() {
+export default function ViewPicks() {
   const [pickedGames, setPickedGames] = useState([]);
   const [users, setUsers] = useState([]);
   const [gamesWithScores, setGamesWithScores] = useState([]);
@@ -99,7 +99,7 @@ export default function EnterScores() {
         </div>
       )}
       <br />
-      <SeasonStatisticsContext.Provider value={{ seasonData: [] }}>
+      <SeasonStatisticsContext.Provider value={{ seasonData: seasonData }}>
         {pickedGames.map((game) => {
           const gameData = gamesWithScores.find((g) => g._id === game._id);
           return (

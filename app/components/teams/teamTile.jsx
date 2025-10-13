@@ -1,33 +1,20 @@
 import cssStyles from "./teamTile.module.css";
 import { Bitcount_Prop_Single } from "next/font/google";
-import { AvatarGroup, Collapse, Fade, Slide, Zoom } from "@mui/material";
+import { Collapse, Fade, Slide, Zoom } from "@mui/material";
 import { useRef, useState } from "react";
 import { useSeasonStatistics } from "@/app/context/SeasonStatistics";
 
 // Using Bitcount font for scores
 const bitcount = Bitcount_Prop_Single({ subsets: ["latin"] });
 
-export default function TeamTile({
-  team,
-  home = false,
-  score = null,
-  avatars = null,
-  favorite = false,
-  highlight = "",
-  showDetails = false,
-}) {
+export default function TeamTile({ team, home = false, score = null, showDetails = false }) {
   const { seasonData } = useSeasonStatistics();
   const gamesForThisTeam = seasonData.filter((game) => game.home.id === team.id || game.away.id === team.id);
   gamesForThisTeam.sort((a, b) => b.week - a.week);
 
   // const displayRef = useRef(null);
   return (
-    <div className={cssStyles.teamContainer + " " + highlight}>
-      {favorite && avatars && (
-        <AvatarGroup className={cssStyles.avatarGroup} max={7} spacing={0}>
-          {avatars}
-        </AvatarGroup>
-      )}
+    <div className={cssStyles.teamContainer}>
       <div
         className={cssStyles.team}
         style={{
@@ -71,11 +58,6 @@ export default function TeamTile({
           <div className={`${cssStyles.score} ${bitcount.className}`}>{score}</div>
         </div>
       </div>
-      {!favorite && avatars && (
-        <AvatarGroup className={cssStyles.avatarGroup} max={7} spacing={0}>
-          {avatars}
-        </AvatarGroup>
-      )}
     </div>
   );
 }

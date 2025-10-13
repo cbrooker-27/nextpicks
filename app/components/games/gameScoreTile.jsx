@@ -59,7 +59,7 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
         return generateAvatar(choice);
       }
     })
-    .sort((a, b) => (a.key === activeUser?.name ? -1 : 1));
+    .sort((a, b) => (a.key === activeUser?.name ? 1 : -1));
 
   const ufAvatars = game.userChoices
     .map((choice) => {
@@ -67,7 +67,7 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
         return generateAvatar(choice);
       }
     })
-    .sort((a, b) => (a.key === activeUser?.name ? -1 : 1));
+    .sort((a, b) => (a.key === activeUser?.name ? 1 : -1));
 
   const uuAvatars = game.userChoices
     .map((choice) => {
@@ -75,7 +75,7 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
         return generateAvatar(choice);
       }
     })
-    .sort((a, b) => (a.key === activeUser?.name ? -1 : 1));
+    .sort((a, b) => (a.key === activeUser?.name ? 1 : -1));
 
   const liveLabel = liveDetails.intermission
     ? liveDetails.intermission === 2
@@ -86,23 +86,17 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
   return (
     <div className={cssStyles.gametile}>
       <div className={cssStyles.teams}>
-        <TeamTile
-          team={favorite}
-          home={!game.awayFavorite}
-          score={favScore}
-          avatars={ffAvatars}
-          favorite
-          highlight={liveDetails.playedStatus === "UNPLAYED" ? null : ffHighlight}
-        />
-
-        <div className={cssStyles.spread + " " + (liveDetails.playedStatus === "UNPLAYED" ? "" : ufHighlight)}>
+        <div className={cssStyles.gameteam + " " + (liveDetails.playedStatus === "UNPLAYED" ? "" : ffHighlight)}>
+          <TeamTile team={favorite} home={!game.awayFavorite} score={favScore} favorite />
+          <div className={cssStyles.avatarsTeam}>
+            <AvatarGroup max={30} spacing={0}>
+              {ffAvatars}
+            </AvatarGroup>
+          </div>
+        </div>
+        <div className={cssStyles.spreadContainer + " " + (liveDetails.playedStatus === "UNPLAYED" ? "" : ufHighlight)}>
           {gameChip}
-
-          {game.spread === 0.5 ? "Pick'em" : "-" + game.spread}
-          <AvatarGroup max={5} className={cssStyles.avatarGroup} spacing={0}>
-            {ufAvatars}
-          </AvatarGroup>
-          <br />
+          <div className={cssStyles.spread}>{game.spread === 0.5 ? "Pick'em" : "-" + game.spread}</div>
           {liveDetails.playedStatus === "LIVE" && (
             <Chip
               label={liveLabel}
@@ -110,14 +104,20 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
               icon={liveDetails.intermission ? null : quarterIcons[liveDetails.currentQuarter - 1]}
             />
           )}
+          <div className={cssStyles.avatarsSpread}>
+            <AvatarGroup max={30} spacing={0}>
+              {ufAvatars}
+            </AvatarGroup>
+          </div>
         </div>
-        <TeamTile
-          team={underdog}
-          home={game.awayFavorite}
-          score={undScore}
-          avatars={uuAvatars}
-          highlight={liveDetails.playedStatus === "UNPLAYED" ? null : uuHighlight}
-        />
+        <div className={cssStyles.gameteam + " " + (liveDetails.playedStatus === "UNPLAYED" ? "" : uuHighlight)}>
+          <TeamTile team={underdog} home={game.awayFavorite} score={undScore} />
+          <div className={cssStyles.avatarsTeam}>
+            <AvatarGroup max={30} spacing={0}>
+              {uuAvatars}
+            </AvatarGroup>
+          </div>
+        </div>
       </div>
       <div className={cssStyles.gamelocation}>
         {game.location + " - " + startTime.toLocaleDateString() + " - " + startTime.toLocaleTimeString()}
