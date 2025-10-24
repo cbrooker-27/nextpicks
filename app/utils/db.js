@@ -49,8 +49,39 @@ export const getCurrentWeek = async () => {
 };
 
 export const updateCurrentWeek = async (newWeek) => {
+  const lastWeeksPicks = JSON.parse(await getThisWeeksPickedGames());
   const client = await connectToDatabase();
   const db = client.db(process.env.MONGODB_DB || "picks");
+
+  await Promise.all(
+    lastWeeksPicks.map(async (game) => {
+      if (!game.userChoices.some((choice) => choice.userId === "Homer")) {
+        await homerChoice(game, db);
+        console.log("Added Homer choice for game ", game._id);
+      }
+      if (!game.userChoices.some((choice) => choice.userId === "Jackie")) {
+        await jackieChoice(game, db);
+        console.log("Added Jackie choice for game ", game._id);
+      }
+      if (!game.userChoices.some((choice) => choice.userId === "Freddy")) {
+        await freddyChoice(game, db);
+        console.log("Added Freddy choice for game ", game._id);
+      }
+      if (!game.userChoices.some((choice) => choice.userId === "Underdog")) {
+        await underdogChoice(game, db);
+        console.log("Added Underdog choice for game ", game._id);
+      }
+      if (!game.userChoices.some((choice) => choice.userId === "Robbie")) {
+        await robbieChoice(game, db);
+        console.log("Added Robbie choice for game ", game._id);
+      }
+      if (!game.userChoices.some((choice) => choice.userId === "Sammy")) {
+        await sammyChoice(game, db);
+        console.log("Added Sammy choice for game ", game._id);
+      }
+    })
+  );
+
   const updatedWeek = await db.collection("currentWeek").updateOne({}, { $set: { week: newWeek } });
   console.log("updated week: " + updatedWeek);
   client.close();
@@ -93,37 +124,7 @@ export async function addGames(games) {
         const insertResult = await db.collection("games").insertOne(game);
         if (insertResult.acknowledged) {
           console.log("Inserted game: ", game._id);
-          await db
-            .collection("userChoices")
-            .insertOne({ gameId: game._id, userId: "Freddy", choice: "ff", selectionTime: new Date().toISOString() });
-          await db
-            .collection("userChoices")
-            .insertOne({ gameId: game._id, userId: "Underdog", choice: "uu", selectionTime: new Date().toISOString() });
-          await db
-            .collection("userChoices")
-            .insertOne({ gameId: game._id, userId: "Sammy", choice: "uf", selectionTime: new Date().toISOString() });
-          await db.collection("userChoices").insertOne({
-            gameId: game._id,
-            userId: "Homer",
-            choice: game.awayFavorite ? "uu" : "ff",
-            selectionTime: new Date().toISOString(),
-          });
-          await db.collection("userChoices").insertOne({
-            gameId: game._id,
-            userId: "Jackie",
-            choice: game.awayFavorite ? "ff" : "uu",
-            selectionTime: new Date().toISOString(),
-          });
-
-          //need to randomize Robbie's choice
-          const choices = game.spread === 0.5 ? ["ff", "uu"] : ["ff", "uf", "uu"];
-          const randomChoice = choices[Math.floor(Math.random() * choices.length)];
-          await db.collection("userChoices").insertOne({
-            gameId: game._id,
-            userId: "Robbie",
-            choice: randomChoice,
-            selectionTime: new Date().toISOString(),
-          });
+          await npcChoices(game, db);
         }
         client.close();
       })
@@ -132,6 +133,58 @@ export async function addGames(games) {
   } catch (error) {
     console.error("Error adding games:", error);
   }
+}
+
+async function freddyChoice(game, db) {
+  await db
+    .collection("userChoices")
+    .insertOne({ gameId: game._id, userId: "Freddy", choice: "ff", selectionTime: new Date().toISOString() });
+}
+async function underdogChoice(game, db) {
+  await db
+    .collection("userChoices")
+    .insertOne({ gameId: game._id, userId: "Underdog", choice: "uu", selectionTime: new Date().toISOString() });
+}
+async function sammyChoice(game, db) {
+  await db
+    .collection("userChoices")
+    .insertOne({ gameId: game._id, userId: "Sammy", choice: "uf", selectionTime: new Date().toISOString() });
+}
+async function homerChoice(game, db) {
+  await db.collection("userChoices").insertOne({
+    gameId: game._id,
+    userId: "Homer",
+    choice: game.awayFavorite ? "uu" : "ff",
+    selectionTime: new Date().toISOString(),
+  });
+}
+async function jackieChoice(game, db) {
+  await db.collection("userChoices").insertOne({
+    gameId: game._id,
+    userId: "Jackie",
+    choice: game.awayFavorite ? "ff" : "uu",
+    selectionTime: new Date().toISOString(),
+  });
+}
+async function robbieChoice(game, db) {
+  //need to randomize Robbie's choice
+  const choices = game.spread === 0.5 ? ["ff", "uu"] : ["ff", "uf", "uu"];
+  const randomChoice = choices[Math.floor(Math.random() * choices.length)];
+  await db.collection("userChoices").insertOne({
+    gameId: game._id,
+    userId: "Robbie",
+    choice: randomChoice,
+    selectionTime: new Date().toISOString(),
+  });
+}
+
+async function npcChoices(game, db) {
+  await freddyChoice(game, db);
+  await underdogChoice(game, db);
+  await sammyChoice(game, db);
+  await homerChoice(game, db);
+  await jackieChoice(game, db);
+  await robbieChoice(game, db);
 }
 
 export async function addUserChoices(choices) {

@@ -9,7 +9,9 @@ const bitcount = Bitcount_Prop_Single({ subsets: ["latin"] });
 
 export default function TeamTile({ team, home = false, score = null, showDetails = false }) {
   const { seasonData } = useSeasonStatistics();
-  const gamesForThisTeam = seasonData.filter((game) => game.home.id === team.id || game.away.id === team.id);
+  const gamesForThisTeam = seasonData.filter(
+    (game) => game.home.id === team.id || game.away.id === team.id // && game.week < seasonData.currentWeek
+  );
   gamesForThisTeam.sort((a, b) => b.week - a.week);
 
   // const displayRef = useRef(null);
