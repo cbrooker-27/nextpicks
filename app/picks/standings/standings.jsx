@@ -2,73 +2,27 @@ import { getGamesForWeekFromMsf } from "@/app/lib/msf";
 import { getCurrentWeek, getPickedGames, getThisYearsActiveUsers } from "@/app/utils/db";
 import { auth, signIn } from "@/auth";
 import { Chip, Avatar, Tooltip } from "@mui/material";
+import { LineChart } from "@mui/x-charts";
 import { BarChart } from "@mui/x-charts/BarChart";
+import { getUserStatsForStandings } from "@/app/serverActions/users";
 // import { useEffect, useState } from "react";
 // import { signIn, useSession } from "next-auth/react";
 
 export default async function Standings() {
   const session = await auth();
-
   const week = await getCurrentWeek();
-  const activeUsers = JSON.parse(await getThisYearsActiveUsers());
+  const userStats = await getUserStatsForStandings({ ...week, week: week.week - 1 });
+
   const series = [];
-
-  activeUsers.forEach((user) => {
-    user.totalPoints = 0;
-    user.points = [];
-    user.points[0] = 0;
-  });
-
   for (let i = 1; i < week.week; i++) {
     series.push({ dataKey: "week" + i, label: "Week " + i, stack: "points" });
-    const pickedGames = JSON.parse(await getPickedGames({ week: i, season: week.season }));
-    const gamesWithScores = await getGamesForWeekFromMsf({ week: "" + i, season: "" + week.season });
-
-    activeUsers.forEach((user) => {
-      user["week" + i] = 0;
-    });
-
-    pickedGames.map((game) => {
-      const gameData = gamesWithScores.find((g) => g._id === game._id);
-      let gamePoints = [];
-      const favScore = game.awayFavorite ? gameData.awayScore : gameData.homeScore;
-      const undScore = game.awayFavorite ? gameData.homeScore : gameData.awayScore;
-      if (favScore - game.spread > undScore) {
-        gamePoints["ff"] = 2;
-        gamePoints["uf"] = 1;
-        gamePoints["uu"] = 0;
-      } else if (favScore - game.spread < undScore && favScore > undScore) {
-        gamePoints["ff"] = 1;
-        gamePoints["uf"] = 2;
-        gamePoints["uu"] = 1;
-      } else if (favScore - game.spread < undScore && favScore === undScore) {
-        gamePoints["ff"] = 0;
-        gamePoints["uf"] = 1;
-        gamePoints["uu"] = 1;
-      } else {
-        gamePoints["ff"] = 0;
-        gamePoints["uf"] = 1;
-        gamePoints["uu"] = 2;
-      }
-      activeUsers.forEach((user) => {
-        const userChoice = game.userChoices.find((choice) => choice.userId === user.name);
-
-        if (gameData.playedStatus.startsWith("COMPLETED")) {
-          user["week" + i] += gamePoints[userChoice?.choice] || 0;
-          user.totalPoints += gamePoints[userChoice?.choice] || 0;
-        } else if (gameData.playedStatus === "LIVE") {
-          console.log("Game in progress, no points awarded yet...should not get here");
-        }
-      });
-    });
   }
-  activeUsers.sort((a, b) => b.totalPoints - a.totalPoints);
 
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: "5px", width: "150px" }}>
-        <h2>Standings</h2>
-        {activeUsers.map((user) => (
+      <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+        <h2>Standings up to week {week.week}</h2>
+        {userStats.map((user) => (
           <Tooltip key={user.name} title={"[" + user.points.slice(1).join(", ") + "]"} arrow>
             <Chip
               key={user.name}
@@ -86,15 +40,25 @@ export default async function Standings() {
       </div>
       <div style={{ marginTop: "50px", width: "100%" }}>
         <BarChart
-          dataset={activeUsers}
+          dataset={userStats}
           series={series}
           //xAxis={[{ width: 50 }]}
-          yAxis={[{ scaleType: "band", dataKey: "name" }]}
+          yAxis={[{ scaleType: "band", dataKey: "name", width: 70 }]}
           layout={"horizontal"}
           height={550}
           borderRadius={10}
           margin={{ left: 0 }}
         />
+        {/* <LineChart
+          dataset={activeUsers}
+          series={series}
+          //xAxis={[{ width: 50 }]}
+          yAxis={[{ scaleType: "band", dataKey: "name", width: 70 }]}
+          layout={"horizontal"}
+          height={550}
+          borderRadius={10}
+          margin={{ left: 0 }}
+        /> */}
       </div>
     </>
   );

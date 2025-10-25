@@ -1,16 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getAllUserFromDb, getCurrentWeek, getThisWeeksPickedGames } from "./utils/db";
+import { getAllGames, getAllUserFromDb, getCurrentWeek, getThisWeeksPickedGames } from "./utils/db";
 import { useSession } from "next-auth/react";
-import { Box, Card, CardContent, Skeleton, Tooltip, Avatar, AvatarGroup } from "@mui/material";
+import { Box, Card, CardContent, Skeleton, Tooltip, Avatar, AvatarGroup, Typography } from "@mui/material";
 import cssStyles from "./page.module.css";
+import { SeasonStatisticsProvider } from "./context/SeasonStatistics";
+import WeeklyScoreCard from "./components/WeeklyScoreCard";
+import { getUserStatsForStandings } from "./serverActions/users";
 
 export default function Home() {
   const [pickedGames, setPickedGames] = useState([]);
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [week, setWeek] = useState(null);
+  const [seasonData, setSeasonData] = useState([]);
   const { data: session, status } = useSession();
+  const [userStats, setUserStats] = useState([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -24,6 +29,24 @@ export default function Home() {
     }
     void fetchData();
   }, []);
+
+  useEffect(() => {
+    async function fetchUserStats() {
+      const stats = await getUserStatsForStandings(week);
+      setUserStats(stats);
+    }
+    if (week) void fetchUserStats();
+  }, [week]);
+
+  useEffect(() => {
+    async function getSeasonData() {
+      setSeasonData(await getAllGames(week.season));
+    }
+    if (!isLoading) {
+      void getSeasonData();
+    }
+  }, [isLoading, week]);
+
   let usersWhoPicked = [];
   let usersForThisSeason = [];
   if (!isLoading) {
@@ -38,7 +61,7 @@ export default function Home() {
   return isLoading ? (
     <Skeleton />
   ) : (
-    <>
+    <SeasonStatisticsProvider value={{ seasonData: seasonData }}>
       <Box
         sx={{
           width: "100%",
@@ -48,13 +71,20 @@ export default function Home() {
         }}
       >
         {session && (
-          <Card sx={{ backgroundColor: pickedThisWeek ? "green" : "yellow" }}>
-            <CardContent sx={{ height: "100%" }}>
-              <h1>Week {week.week}!</h1>
-              <p>You have {pickedThisWeek ? " already picked" : "not picked"} games this week!</p>
-              <p>Use the navigation menu to access different features.</p>
-            </CardContent>
-          </Card>
+          <>
+            <WeeklyScoreCard
+              userName={session?.user?.name}
+              week={week}
+              userStats={userStats}
+              currentWeek
+              pickedThisWeek={pickedThisWeek}
+            />
+            <WeeklyScoreCard
+              userName={session?.user?.name}
+              week={{ ...week, week: week.week - 1 }}
+              userStats={userStats}
+            />
+          </>
         )}
         <Card>
           <CardContent>
@@ -108,6 +138,6 @@ export default function Home() {
           </CardContent>
         </Card>
       </Box>
-    </>
+    </SeasonStatisticsProvider>
   );
 }
