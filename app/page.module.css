@@ -1,0 +1,22 @@
+:global(.MuiCardContent-root) :global(.MuiAvatarGroup-root) .avatar {
+    border: 2px solid black;
+}
+
+:global(.MuiCardContent-root) :global(.MuiAvatarGroup-root) .npcAvatar {
+
+    border: 2px solid orange;
+}
+
+:global(.MuiCardContent-root) :global(.MuiAvatarGroup-root) .hilitedAvatar {
+    border: 3px solid lightskyblue;
+    width: 48px;
+    height: 48px;
+}
+
+:global(.MuiCardContent-root) .avatarGroup {
+    display: flex;
+    flex-direction: row-reverse;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}

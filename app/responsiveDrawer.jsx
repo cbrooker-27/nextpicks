@@ -19,6 +19,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { Avatar, ListItemAvatar, ListSubheader, Skeleton } from "@mui/material";
 import {
   Add,
+  Cottage,
   EditCalendar,
   EventRepeat,
   Leaderboard,
@@ -40,6 +41,11 @@ export default function ResponsiveDrawer(props) {
     {
       sectionname: "Picks",
       navItems: [
+        {
+          itemname: "Home",
+          icon: Cottage,
+          target: "/",
+        },
         {
           itemname: "Make Picks",
           icon: TaskAlt,
