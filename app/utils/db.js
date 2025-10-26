@@ -213,19 +213,29 @@ export async function getThisWeeksPickedGames() {
   return await getPickedGames(week);
 }
 
-export async function getPickedGames(week) {
-  const games = await getPickableGames(week);
+async function getAllUserChoices() {
+  const client = await connectToDatabase();
+  const db = client.db(process.env.MONGODB_DB || "picks");
+  const findResult = db.collection("userChoices").find();
+  const userChoices = await findResult.toArray();
+  client.close();
+  return userChoices;
+}
 
-  const pickedGames = await Promise.all(
-    games.map(async (game) => {
-      const client = await connectToDatabase();
-      const db = client.db(process.env.MONGODB_DB || "picks");
-      const findResult = db.collection("userChoices").find({ gameId: game._id });
-      game.userChoices = await findResult.toArray();
-      client.close();
-      return game;
-    })
-  );
+export async function getPickedGames(week) {
+  //TODO: Need to optimize this as the number of db calls is high
+  const games = await getPickableGames(week);
+  const allUserChoices = await getAllUserChoices();
+
+  const pickedGames = games.map((game) => {
+    // const client = await connectToDatabase();
+    // const db = client.db(process.env.MONGODB_DB || "picks");
+    // const findResult = db.collection("userChoices").find({ gameId: game._id });
+    // game.userChoices = await findResult.toArray();
+    // client.close();
+    game.userChoices = allUserChoices.filter((choice) => choice.gameId === game._id);
+    return game;
+  });
   // @ts-ignore
   // pickedGames.sort((a, b) => a._id - b._id);
   pickedGames.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));

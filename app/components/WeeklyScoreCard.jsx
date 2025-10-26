@@ -11,10 +11,8 @@ import Slider from "@mui/material/Slider";
  * - userName: string (user id/name to look up picks)
  * - week: object (week info, e.g. { week: number, season: number })
  * - userStats: array (precomputed user stats for efficiency)
- *
- * Scoring heuristics (robust to varying shape):
- * - +1 if choice.isCorrect === true
- * - otherwise +1 if chosenTeam matches game.winner / game.winningTeam / game.result.winner
+ * - pickedThisWeek: boolean (whether the user has picked this week)
+ * - currentWeek: boolean (whether this is the current week)
  */
 export default function WeeklyScoreCard({ userName, week, userStats, pickedThisWeek, currentWeek }) {
   const seasonStatistics = useSeasonStatistics();
@@ -30,7 +28,7 @@ export default function WeeklyScoreCard({ userName, week, userStats, pickedThisW
 
   const marks = [
     { value: 0, label: "0" },
-    { value: leader, label: "leader" },
+    { value: leader, label: "leader (" + leader + ")" },
   ];
   if (possiblePoints !== leader) {
     marks.push({ value: possiblePoints, label: possiblePoints });
@@ -58,6 +56,7 @@ export default function WeeklyScoreCard({ userName, week, userStats, pickedThisW
           min={0}
           max={possiblePoints}
           valueLabelDisplay="on"
+          sx={{ width: "90%" }}
         />
       </CardContent>
     </Card>
