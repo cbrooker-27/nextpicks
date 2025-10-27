@@ -222,6 +222,16 @@ async function getAllUserChoices() {
   return userChoices;
 }
 
+export async function getAllPickedGames(season) {
+  const games = await getAllGames(season);
+  const allUserChoices = await getAllUserChoices();
+  const pickedGames = games.map((game) => {
+    game.userChoices = allUserChoices.filter((choice) => choice.gameId === game._id);
+    return game;
+  });
+  return JSON.stringify(pickedGames);
+}
+
 export async function getPickedGames(week) {
   //TODO: Need to optimize this as the number of db calls is high
   const games = await getPickableGames(week);

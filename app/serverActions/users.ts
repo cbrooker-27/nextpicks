@@ -1,7 +1,7 @@
 import { getGamesForWeekFromMsf } from "@/app/lib/msf";
-import { getPickedGames, getThisYearsActiveUsers } from "@/app/utils/db";
+import { getPickedGames, getThisYearsActiveUsers, getAllPickedGames } from "@/app/utils/db";
 
-export async function getUserStatsForStandings(week) {
+export async function getUserStatsForStandings(week,includCurrentWeek) {
   const activeUsers = JSON.parse(await getThisYearsActiveUsers());
 
   activeUsers.forEach((user) => {
@@ -10,9 +10,15 @@ export async function getUserStatsForStandings(week) {
     user.points[0] = 0;
   });
 
+  const allPickedGames = JSON.parse(await getAllPickedGames(week.season));
+  let gamesWithScores = [];
+
   for (let i = 1; i <= week.week; i++) {
-    const pickedGames = JSON.parse(await getPickedGames({ week: i, season: week.season }));
-    const gamesWithScores = await getGamesForWeekFromMsf({ week: "" + i, season: "" + week.season });
+    //const pickedGames = JSON.parse(await getPickedGames({ week: i, season: week.season }));
+    if (includCurrentWeek && i === week.week) {
+        //this means we can run into live scores, we don't have thosein our db, so get them from msf
+        gamesWithScores = await getGamesForWeekFromMsf({ week: "" + i, season: "" + week.season });
+    }
 
     activeUsers.forEach((user) => {
       user["week" + i] = 0;
@@ -20,11 +26,16 @@ export async function getUserStatsForStandings(week) {
       user["possiblePoints" + i] = 0;
     });
 
-    pickedGames.map((game) => {
-      const gameData = gamesWithScores.find((g) => g._id === game._id);
+    allPickedGames.filter((game) => game.week === i).map((game) => {
+        if (includCurrentWeek && i === week.week) {
+            const gameData = gamesWithScores.find((g) => g._id === game._id);
+            game.awayScore = gameData.awayScore;
+            game.homeScore = gameData.homeScore;
+            game.playedStatus = gameData.playedStatus;
+        }
       let gamePoints = [];
-      const favScore = game.awayFavorite ? gameData.awayScore : gameData.homeScore;
-      const undScore = game.awayFavorite ? gameData.homeScore : gameData.awayScore;
+      const favScore = game.awayFavorite ? game.awayScore : game.homeScore;
+      const undScore = game.awayFavorite ? game.homeScore : game.awayScore;
       if (favScore - game.spread > undScore) {
         gamePoints["ff"] = 2;
         gamePoints["uf"] = 1;
@@ -45,11 +56,11 @@ export async function getUserStatsForStandings(week) {
       activeUsers.forEach((user) => {
         const userChoice = game.userChoices.find((choice) => choice.userId === user.name);
 
-        if (gameData.playedStatus.startsWith("COMPLETED")) {
+        if (game.playedStatus.startsWith("COMPLETED")) {
           user["week" + i] += gamePoints[userChoice?.choice] || 0;
           user.totalPoints += gamePoints[userChoice?.choice] || 0;
           user["possiblePoints"+i] += 2;
-        } else if (gameData.playedStatus === "LIVE") {
+        } else if (game.playedStatus === "LIVE") {
           user["weekLive" + i] += gamePoints[userChoice?.choice] || 0;
           //console.log("Game in progress, no points awarded yet...should not get here");
         }

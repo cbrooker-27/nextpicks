@@ -11,7 +11,7 @@ import { getUserStatsForStandings } from "@/app/serverActions/users";
 export default async function Standings() {
   const session = await auth();
   const week = await getCurrentWeek();
-  const userStats = await getUserStatsForStandings({ ...week, week: week.week - 1 });
+  const userStats = await getUserStatsForStandings({ ...week, week: week.week - 1 }, false);
 
   const series = [];
   for (let i = 1; i < week.week; i++) {

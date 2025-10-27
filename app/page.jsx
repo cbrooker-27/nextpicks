@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getAllGames, getAllUserFromDb, getCurrentWeek, getThisWeeksPickedGames } from "./utils/db";
+import { getAllGames, getAllUserFromDb, getCurrentWeek, getPickedGames } from "./utils/db";
 import { useSession } from "next-auth/react";
-import { Box, Card, CardContent, Skeleton, Tooltip, Avatar, AvatarGroup, Typography } from "@mui/material";
+import { Box, Card, CardContent, Skeleton, Tooltip, Avatar, AvatarGroup } from "@mui/material";
 import cssStyles from "./page.module.css";
 import { SeasonStatisticsProvider } from "./context/SeasonStatistics";
 import WeeklyScoreCard from "./components/WeeklyScoreCard";
@@ -19,9 +19,10 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchData() {
-      const fetchedPicks = await getThisWeeksPickedGames();
-      const users = await getAllUserFromDb();
       const currentWeek = await getCurrentWeek();
+      const fetchedPicks = await getPickedGames(currentWeek);
+      const users = await getAllUserFromDb();
+
       setWeek(currentWeek);
       setUsers(JSON.parse(users));
       setPickedGames(JSON.parse(fetchedPicks));
@@ -32,7 +33,7 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchUserStats() {
-      const stats = await getUserStatsForStandings(week);
+      const stats = await getUserStatsForStandings(week, true);
       setUserStats(stats);
     }
     if (week) void fetchUserStats();
