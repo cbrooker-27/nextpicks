@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { Card, CardContent, Typography, CardMedia } from "@mui/material";
+import { Card, CardActions, Button, CardContent, Typography, CardMedia } from "@mui/material";
 import { useSeasonStatistics } from "../context/SeasonStatistics";
 import Slider from "@mui/material/Slider";
+import { useRouter } from "next/navigation";
 
 /**
  * WeeklyScoreCard
@@ -15,6 +16,7 @@ import Slider from "@mui/material/Slider";
  * - currentWeek: boolean (whether this is the current week)
  */
 export default function WeeklyScoreCard({ userName, week, userStats, pickedThisWeek, currentWeek }) {
+  const router = useRouter();
   const seasonStatistics = useSeasonStatistics();
   const { points, possiblePoints, leader } = useMemo(() => {
     const userStat = userStats.find((u) => u.name === userName);
@@ -35,8 +37,8 @@ export default function WeeklyScoreCard({ userName, week, userStats, pickedThisW
   }
 
   return userStats && userStats.length > 0 ? (
-    <Card sx={{ backgroundColor: currentWeek ? (pickedThisWeek ? "green" : "yellow") : "default" }}>
-      <CardContent>
+    <Card>
+      <CardContent sx={{ backgroundColor: currentWeek ? (pickedThisWeek ? "green" : "yellow") : "default" }}>
         <Typography variant="h6" gutterBottom>
           {currentWeek ? (pickedThisWeek ? "Thanks for picking!" : "You still need to pick!") : ""}
           <br />
@@ -59,6 +61,20 @@ export default function WeeklyScoreCard({ userName, week, userStats, pickedThisW
           sx={{ width: "90%" }}
         />
       </CardContent>
+      {currentWeek && !pickedThisWeek && (
+        <CardActions>
+          <Button size="large" onClick={() => router.push(`/picks/makePicks`)}>
+            Make your picks
+          </Button>
+        </CardActions>
+      )}
+      {currentWeek && pickedThisWeek && (
+        <CardActions>
+          <Button size="large" onClick={() => router.push(`/picks/view`)}>
+            View all picks
+          </Button>
+        </CardActions>
+      )}
     </Card>
   ) : (
     <Card>
