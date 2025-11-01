@@ -39,27 +39,32 @@ export default function WeeklyScoreCard({ userName, week, userStats, pickedThisW
   return userStats && userStats.length > 0 ? (
     <Card>
       <CardContent sx={{ backgroundColor: currentWeek ? (pickedThisWeek ? "green" : "yellow") : "default" }}>
-        <Typography variant="h6" gutterBottom>
-          {currentWeek ? (pickedThisWeek ? "Thanks for picking!" : "You still need to pick!") : ""}
-          <br />
-          {currentWeek ? "This" : "Last"} Week's Score
+        <Typography variant="h6">
+          {currentWeek ? (pickedThisWeek ? "Thanks for picking!" : "You need to pick!") : ""}
         </Typography>
-        <Typography variant="h2" sx={{ mb: 1 }}>
-          {points}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          out of {possiblePoints} possible points
-        </Typography>
-        <Slider
-          aria-label="Always visible"
-          defaultValue={points}
-          disabled
-          marks={marks}
-          min={0}
-          max={possiblePoints}
-          valueLabelDisplay="on"
-          sx={{ width: "90%" }}
-        />
+        {(!currentWeek || pickedThisWeek) && (
+          <>
+            <Typography variant="h2" sx={{ mb: 1 }}>
+              {points}
+            </Typography>
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              {currentWeek ? "This" : "Last"} Week's Score
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              out of {possiblePoints} possible points
+            </Typography>
+            <Slider
+              aria-label="Always visible"
+              defaultValue={points}
+              disabled
+              marks={marks}
+              min={0}
+              max={possiblePoints}
+              valueLabelDisplay="on"
+              sx={{ width: "90%" }}
+            />
+          </>
+        )}
       </CardContent>
       {currentWeek && !pickedThisWeek && (
         <CardActions>
