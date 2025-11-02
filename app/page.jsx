@@ -68,7 +68,7 @@ export default function Home() {
         sx={{
           width: "100%",
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(min(300px, 100%), 1fr))",
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(350px, 100%), 1fr))",
           gap: 2,
         }}
       >

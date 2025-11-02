@@ -61,7 +61,7 @@ export default function WeeklyScoreCard({ userName, week, userStats, pickedThisW
               min={0}
               max={possiblePoints}
               valueLabelDisplay="on"
-              sx={{ width: "90%" }}
+              sx={{ width: "90%", height: "20px", marginTop: "15px" }}
             />
           </>
         )}
