@@ -6,6 +6,7 @@ import { Box, Card, CardContent, Skeleton, Tooltip, Avatar, AvatarGroup } from "
 import cssStyles from "./page.module.css";
 import { SeasonStatisticsProvider } from "./context/SeasonStatistics";
 import WeeklyScoreCard from "./components/WeeklyScoreCard";
+import TopThreeWidget from "./components/TopThreeWidget";
 import { getUserStatsForStandings } from "./serverActions/users";
 
 export default function Home() {
@@ -85,6 +86,8 @@ export default function Home() {
               week={{ ...week, week: week.week - 1 }}
               userStats={userStats}
             />
+            {/* Top 3 users from last week */}
+            <TopThreeWidget userStats={userStats} week={week} />
           </>
         )}
         <Card>
