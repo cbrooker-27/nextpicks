@@ -46,11 +46,11 @@ export default function TopThreeWidget({ userStats = [], week }) {
   const medalStyle = (pos) => {
     switch (pos) {
       case 0:
-        return { border: "3px solid #D4AF37" }; // gold
+        return { border: "3px solid #eec951ff" }; // gold
       case 1:
-        return { border: "3px solid #C0C0C0" }; // silver
+        return { border: "3px solid #a3a3a3ff" }; // silver
       case 2:
-        return { border: "3px solid #CD7F32" }; // bronze
+        return { border: "3px solid #8d5822ff" }; // bronze
       default:
         return {};
     }
@@ -67,62 +67,70 @@ export default function TopThreeWidget({ userStats = [], week }) {
 
         {topRanks.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
-            No data for last week yet.
+            Top 3 are making their way to the podium...
           </Typography>
         ) : (
           <Box sx={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 2 }}>
             {/* render columns for rank 2, 1, 3 so first place is centered */}
             {[2, 1, 3].map((rankSlot) => {
               const usersForRank = topRanks.filter((u) => u.rank === rankSlot);
+              if (usersForRank.length === 0) {
+                return null;
+              }
               return (
-                <Box key={rankSlot} sx={{ width: 160, textAlign: "center" }}>
-                  {usersForRank.length === 0 ? (
-                    <Box sx={{ height: rankSlot === 1 ? 140 : 110 }} />
-                  ) : (
-                    usersForRank.map((u) => {
-                      const isFirst = u.rank === 1;
-                      const avatarSize = isFirst ? 110 : 78;
-                      return (
-                        <Box key={u.name} sx={{ mb: 1 }}>
-                          <Box sx={{ position: "relative", display: "inline-block" }}>
-                            <Avatar
-                              alt={u.name}
-                              src={u.image}
-                              sx={{
-                                width: avatarSize,
-                                height: avatarSize,
-                                margin: "0 auto",
-                                ...medalStyle(u.rank - 1),
-                              }}
-                            />
-                            <Box
-                              sx={{
-                                position: "absolute",
-                                right: -8,
-                                top: -8,
-                                width: isFirst ? 44 : 36,
-                                height: isFirst ? 44 : 36,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                bgcolor: "transparent",
-                                fontSize: isFirst ? 28 : 22,
-                              }}
-                              aria-hidden
-                            >
-                              {medalEmoji(u.rank)}
-                            </Box>
+                <Box
+                  key={rankSlot}
+                  sx={{
+                    // width: 160,
+                    textAlign: "center",
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  {usersForRank.map((u) => {
+                    const isFirst = u.rank === 1;
+                    const avatarSize = isFirst ? 110 : 78;
+                    return (
+                      <Box key={u.name} sx={{ mb: 1 }}>
+                        <Box sx={{ position: "relative", display: "inline-block" }}>
+                          <Avatar
+                            alt={u.name}
+                            src={u.image}
+                            sx={{
+                              width: avatarSize,
+                              height: avatarSize,
+                              margin: "0 auto",
+                              ...medalStyle(u.rank - 1),
+                            }}
+                          />
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              right: -8,
+                              top: -8,
+                              width: isFirst ? 44 : 36,
+                              height: isFirst ? 44 : 36,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              bgcolor: "transparent",
+                              fontSize: isFirst ? 28 : 22,
+                            }}
+                            aria-hidden
+                          >
+                            {medalEmoji(u.rank)}
                           </Box>
-                          <Typography variant="subtitle1" sx={{ mt: 1 }}>
-                            {u.name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {u.points} pt{u.points === 1 ? "" : "s"}
-                          </Typography>
                         </Box>
-                      );
-                    })
-                  )}
+                        <Typography variant="subtitle1" sx={{ mt: 1 }}>
+                          {u.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {u.points} pt{u.points === 1 ? "" : "s"}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
                 </Box>
               );
             })}
