@@ -85,6 +85,7 @@ export default function TopThreeWidget({ userStats = [], week }) {
                     textAlign: "center",
                     display: "flex",
                     flexDirection: "row",
+                    flexWrap: "wrap",
                     alignItems: "center",
                   }}
                 >
