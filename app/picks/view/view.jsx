@@ -1,12 +1,7 @@
 "use client";
-import { getTeamStatisticsFromMsf, getThisWeeksGamesFromMsf } from "@/app/lib/msf";
-import {
-  getAllUserFromDb,
-  getCurrentWeek,
-  getThisWeeksPickedGames,
-  getThisYearsActiveUsers,
-  getAllGames,
-} from "@/app/utils/db";
+import { getTeamStatisticsFromMsf, getGamesForWeekFromMsf } from "@/app/lib/msf";
+import { getCurrentWeek, getPickedGames, getThisYearsActiveUsers, getAllGames } from "@/app/utils/db";
+import { useSearchParams } from "next/navigation";
 import GameScoreTile from "@/app/components/games/gameScoreTile";
 import { Skeleton, Chip, Avatar, Tooltip, Switch } from "@mui/material";
 import { useEffect, useState } from "react";
@@ -15,14 +10,16 @@ import { SeasonStatisticsContext } from "@/app/context/SeasonStatistics";
 
 export default function ViewPicks() {
   const [pickedGames, setPickedGames] = useState([]);
-  const [users, setUsers] = useState([]);
   const [gamesWithScores, setGamesWithScores] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeUsers, setActiveUsers] = useState([]);
   const [showInProgress, setShowInProgress] = useState(true);
   const [teamDetails, setTeamDetails] = useState([]);
   const [seasonData, setSeasonData] = useState([]);
+  const [week, setWeek] = useState(null);
   const { data: session, status } = useSession();
+  const weekParam = useSearchParams().get("week");
+  const historicalWeek = weekParam !== week?.week;
 
   // if user is not authenticated, send them to sign in
   if (status !== "loading" && !session?.user) {
@@ -31,23 +28,28 @@ export default function ViewPicks() {
 
   useEffect(() => {
     async function fetchData() {
-      const week = await getCurrentWeek();
-      const fetchedPicks = await getThisWeeksPickedGames();
-      const users = await getAllUserFromDb();
-      const gamesWithScores = await getThisWeeksGamesFromMsf();
+      // always fetch current week to obtain season if a week param is provided
+      const currentWeek = await getCurrentWeek();
+      const week = weekParam ? { week: Number(weekParam), season: currentWeek.season } : currentWeek;
+      const fetchedPicks = await getPickedGames(week);
+      if (week.week === currentWeek.week) {
+        const gamesWithScores = await getGamesForWeekFromMsf(week);
+        setGamesWithScores(gamesWithScores);
+      }
+
       const activeUsers = await getThisYearsActiveUsers();
       const teamDetails = await getTeamStatisticsFromMsf(week);
       const seasonData = await getAllGames(week.season);
+
       setSeasonData(seasonData);
       setTeamDetails(teamDetails);
       setActiveUsers(JSON.parse(activeUsers));
-      setUsers(JSON.parse(users));
       setPickedGames(JSON.parse(fetchedPicks));
-      setGamesWithScores(gamesWithScores);
+      setWeek(week);
       setIsLoading(false);
     }
     void fetchData();
-  }, []);
+  }, [weekParam]);
 
   updateUserPoints(pickedGames, gamesWithScores, activeUsers);
 
@@ -55,9 +57,16 @@ export default function ViewPicks() {
     <Skeleton />
   ) : (
     <div>
-      <Switch checked={showInProgress} onChange={() => setShowInProgress(!showInProgress)} />
-      Show points from in-progress games
-      {showInProgress ? (
+      <h2>
+        Viewing picks for week {week.week}, {week.season}
+      </h2>
+      {!historicalWeek && (
+        <>
+          <Switch checked={showInProgress} onChange={() => setShowInProgress(!showInProgress)} />
+          Show points from in-progress games
+        </>
+      )}
+      {!historicalWeek && showInProgress ? (
         <div>
           <h2>Including In-Progress</h2>
           {activeUsers
@@ -80,7 +89,6 @@ export default function ViewPicks() {
         </div>
       ) : (
         <div>
-          <h2>Only Finals</h2>
           {activeUsers.map((user) => (
             <Tooltip key={user.name} title={user.name} arrow>
               <Chip
@@ -101,13 +109,13 @@ export default function ViewPicks() {
       <br />
       <SeasonStatisticsContext.Provider value={{ seasonData: seasonData }}>
         {pickedGames.map((game) => {
-          const gameData = gamesWithScores.find((g) => g._id === game._id);
+          const gameData = historicalWeek ? game : gamesWithScores.find((g) => g._id === game._id);
           return (
             <GameScoreTile
               game={game}
               liveDetails={gameData}
               key={game._id}
-              users={users}
+              users={activeUsers}
               activeUser={session?.user}
               teamDetails={teamDetails}
             />
@@ -124,7 +132,7 @@ function updateUserPoints(pickedGames, gamesWithScores, activeUsers) {
     user.volatilePoints = 0;
   });
   pickedGames.map((game) => {
-    const gameData = gamesWithScores.find((g) => g._id === game._id);
+    const gameData = gamesWithScores?.length > 0 ? gamesWithScores.find((g) => g._id === game._id) : game;
     let gamePoints = [];
     const favScore = game.awayFavorite ? gameData.awayScore : gameData.homeScore;
     const undScore = game.awayFavorite ? gameData.homeScore : gameData.awayScore;

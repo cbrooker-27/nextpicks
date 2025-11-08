@@ -80,6 +80,13 @@ export default function WeeklyScoreCard({ userName, week, userStats, pickedThisW
           </Button>
         </CardActions>
       )}
+      {!currentWeek && (
+        <CardActions>
+          <Button size="large" onClick={() => router.push(`/picks/view?week=${week.week}&season=${week.season}`)}>
+            View last week&apos;s picks
+          </Button>
+        </CardActions>
+      )}
     </Card>
   ) : (
     <Card>
