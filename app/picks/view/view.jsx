@@ -20,7 +20,7 @@ export default function ViewPicks() {
   const [week, setWeek] = useState(null);
   const { data: session, status } = useSession();
   const weekParam = useSearchParams().get("week");
-  const historicalWeek = weekParam !== week?.week;
+  const historicalWeek = weekParam && weekParam !== week?.week;
 
   // if user is not authenticated, send them to sign in
   if (status !== "loading" && !session?.user) {
