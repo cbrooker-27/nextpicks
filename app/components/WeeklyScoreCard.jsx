@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
  * - pickedThisWeek: boolean (whether the user has picked this week)
  * - currentWeek: boolean (whether this is the current week)
  */
-export default function WeeklyScoreCard({ userName, week, userStats, pickedThisWeek, currentWeek }) {
+export default function WeeklyScoreCard({ userName, week, userStats, pickedThisWeek = false, currentWeek = false }) {
   const router = useRouter();
   const seasonStatistics = useSeasonStatistics();
   const { points, possiblePoints, leader } = useMemo(() => {
@@ -26,7 +26,7 @@ export default function WeeklyScoreCard({ userName, week, userStats, pickedThisW
     const leader = userStats.reduce((max, u) => Math.max(max, u["week" + week.week] || 0), 0);
 
     return { points: pts, possiblePoints: count, leader };
-  }, [userName, week, seasonStatistics, userStats]);
+  }, [userName, week, userStats]);
 
   const marks = [
     { value: 0, label: "0" },
@@ -48,7 +48,7 @@ export default function WeeklyScoreCard({ userName, week, userStats, pickedThisW
               {points}
             </Typography>
             <Typography variant="h6" sx={{ mb: 1 }}>
-              {currentWeek ? "This" : "Last"} Week's Score
+              {currentWeek ? "This" : "Last"} Week&apos;s Score
             </Typography>
             <Typography variant="body2" color="text.secondary">
               out of {possiblePoints} possible points

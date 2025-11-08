@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { useSeasonStatistics } from "@/app/context/SeasonStatistics";
 
 // Using Bitcount font for scores
-const bitcount = Bitcount_Prop_Single({ subsets: ["latin"] });
+const bitcount = Bitcount_Prop_Single({ subsets: ["latin"], display: "swap" });
 
 export default function TeamTile({ team, home = false, score = null, showDetails = false }) {
   const { seasonData } = useSeasonStatistics();

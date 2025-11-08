@@ -1,4 +1,5 @@
 "use client";
+
 import { getTeamStatisticsFromMsf, getGamesForWeekFromMsf } from "@/app/lib/msf";
 import { getCurrentWeek, getPickedGames, getThisYearsActiveUsers, getAllGames } from "@/app/utils/db";
 import { useSearchParams } from "next/navigation";

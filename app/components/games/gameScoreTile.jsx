@@ -6,8 +6,8 @@ import { LooksOne, LooksTwo, Looks3, Looks4, Sports, LiveTv, Update } from "@mui
 
 export default function GameScoreTile({ game, liveDetails, users, activeUser, teamDetails }) {
   const startTime = new Date(game.startTime);
-  const favorite = game.awayFavorite ? game.away : game.home;
-  const underdog = game.awayFavorite ? game.home : game.away;
+  const favorite = structuredClone(game.awayFavorite ? game.away : game.home);
+  const underdog = structuredClone(game.awayFavorite ? game.home : game.away);
   const favScore = game.awayFavorite ? liveDetails.awayScore : liveDetails.homeScore;
   const undScore = game.awayFavorite ? liveDetails.homeScore : liveDetails.awayScore;
   const ffHighlight = favScore - game.spread > undScore ? cssStyles.highlight : "";
@@ -87,7 +87,7 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
     <div className={cssStyles.gametile}>
       <div className={cssStyles.teams}>
         <div className={cssStyles.gameteam + " " + (liveDetails.playedStatus === "UNPLAYED" ? "" : ffHighlight)}>
-          <TeamTile team={favorite} home={!game.awayFavorite} score={favScore} favorite />
+          <TeamTile team={favorite} home={!game.awayFavorite} score={favScore} />
           <div className={cssStyles.avatarsTeam}>
             <AvatarGroup max={30} spacing={0}>
               {ffAvatars}

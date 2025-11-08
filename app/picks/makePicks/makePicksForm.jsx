@@ -13,7 +13,8 @@ import { useState } from "react";
 // a message saying picks are in progress (some kind of loading thingy)
 // then send them to view picks
 
-export default function MakePicksForm({ games, teamDetails }) {
+export default function MakePicksForm(props) {
+  const games = structuredClone(props.games);
   const [readyToSubmit, setReadyToSubmit] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { data: session, status } = useSession();
@@ -90,7 +91,7 @@ export default function MakePicksForm({ games, teamDetails }) {
           key={game._id}
           index={index}
           choiceChanged={choiceChanged}
-          teamDetails={teamDetails}
+          teamDetails={props.teamDetails}
         />
       ))}
     </div>

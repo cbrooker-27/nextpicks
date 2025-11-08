@@ -1,6 +1,7 @@
 import cssStyles from "./pickableGameTile.module.css";
 import TeamTile from "../teams/teamTile";
 import { useState } from "react";
+import Image from "next/image";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import { FormControlLabel, Switch } from "@mui/material";
@@ -8,8 +9,8 @@ import { FormControlLabel, Switch } from "@mui/material";
 export default function PickableGameTile({ game, index, choiceChanged, teamDetails }) {
   const [choice, setChoice] = useState("");
   const [checked, setChecked] = useState(false);
-  const favorite = game.awayFavorite ? game.away : game.home;
-  const underdog = game.awayFavorite ? game.home : game.away;
+  const favorite = structuredClone(game.awayFavorite ? game.away : game.home);
+  const underdog = structuredClone(game.awayFavorite ? game.home : game.away);
   favorite.stats = teamDetails.find((team) => team._id === favorite.id);
   underdog.stats = teamDetails.find((team) => team._id === underdog.id);
 
@@ -75,7 +76,7 @@ export default function PickableGameTile({ game, index, choiceChanged, teamDetai
         className={cssStyles.choices}
       >
         <ToggleButton value="ff" aria-label="ff" style={ffStyle} className={cssStyles.choice}>
-          <img alt="" src={`${favorite.officialLogoImageSrc}`} height="25px" />
+          <Image alt="" src={`${favorite.officialLogoImageSrc}`} height="25" width="25" />
           {"---"}
           {favorite.name + " will win" + (game.spread !== 0.5 ? ` by more than ${game.spread}` : "")}
         </ToggleButton>
@@ -85,7 +86,7 @@ export default function PickableGameTile({ game, index, choiceChanged, teamDetai
           </ToggleButton>
         )}
         <ToggleButton value="uu" aria-label="uu" style={uuStyle} className={cssStyles.choice}>
-          <img alt="" src={`${underdog.officialLogoImageSrc}`} height="25px" />
+          <Image alt="" src={`${underdog.officialLogoImageSrc}`} height="25" width="25" />
           {"---"}
           {`${underdog.name} will win`}{" "}
         </ToggleButton>

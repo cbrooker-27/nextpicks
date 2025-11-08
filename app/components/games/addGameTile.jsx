@@ -5,7 +5,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import FavoriteSwitch from "./favoriteSwitch";
 
 export default function AddGameTile(props) {
-  const game = props.game;
+  const game = structuredClone(props.game);
   const startTime = new Date(game.startTime);
   game.home.stats = props.teamDetails.find((team) => team._id === game.home.id);
   game.away.stats = props.teamDetails.find((team) => team._id === game.away.id);
