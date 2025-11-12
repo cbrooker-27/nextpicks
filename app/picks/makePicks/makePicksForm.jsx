@@ -14,7 +14,7 @@ import { useState } from "react";
 // then send them to view picks
 
 export default function MakePicksForm(props) {
-  const games = structuredClone(props.games);
+  const [games, setGames] = useState(structuredClone(props.games));
   const [readyToSubmit, setReadyToSubmit] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { data: session, status } = useSession();
@@ -29,8 +29,12 @@ export default function MakePicksForm(props) {
 
   function choiceChanged(index, choice) {
     console.log(`Game: ${games[index]._id}, Choice: ${choice}`);
-    games[index].userChoice = choice;
-    const anyEmptyChoices = games.some((game, i) => !game.userChoice);
+
+    const updatedGames = [...games];
+    updatedGames[index].userChoice = choice;
+    setGames(updatedGames);
+
+    const anyEmptyChoices = updatedGames.some((game, i) => !game.userChoice);
     setReadyToSubmit(!anyEmptyChoices);
   }
 

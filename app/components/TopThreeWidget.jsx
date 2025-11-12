@@ -70,7 +70,7 @@ export default function TopThreeWidget({ userStats = [], week }) {
             Top 3 are making their way to the podium...
           </Typography>
         ) : (
-          <Box sx={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 2, flexWrap: "wrap" }}>
             {/* render columns for rank 2, 1, 3 so first place is centered */}
             {[2, 1, 3].map((rankSlot) => {
               const usersForRank = topRanks.filter((u) => u.rank === rankSlot);
