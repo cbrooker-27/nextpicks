@@ -24,6 +24,7 @@ import {
   EventRepeat,
   Leaderboard,
   Park,
+  People,
   TableChart,
   TaskAlt,
   Visibility,
@@ -71,6 +72,16 @@ export default function ResponsiveDrawer(props) {
           icon: EventRepeat,
           target: "/picks/previousWeeks",
           disabled: true,
+        },
+      ],
+    },
+    {
+      sectionname: "Community",
+      navItems: [
+        {
+          itemname: "User Profiles",
+          icon: People,
+          target: "/profiles",
         },
       ],
     },

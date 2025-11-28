@@ -1,0 +1,167 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Avatar,
+  Typography,
+  Box,
+  Paper,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Skeleton,
+} from "@mui/material";
+import { Close } from "@mui/icons-material";
+import { getUserStatsForStandings } from "@/app/serverActions/users";
+import { getCurrentWeek } from "@/app/utils/db";
+
+export default function ProfileModal({ open, onClose, user }) {
+  const [userStats, setUserStats] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [weekData, setWeekData] = useState(null);
+
+  useEffect(() => {
+    if (!open || !user) return;
+
+    async function fetchUserStats() {
+      try {
+        setIsLoading(true);
+        const currentWeek = await getCurrentWeek();
+        setWeekData(currentWeek);
+
+        // Get stats up to current week
+        const stats = await getUserStatsForStandings(currentWeek, false);
+        const userStat = stats.find((u) => u.name === user.name);
+        setUserStats(userStat);
+      } catch (error) {
+        console.error("Error fetching user stats:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    void fetchUserStats();
+  }, [open, user]);
+
+  if (!user) return null;
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", pr: 1 }}>
+        <Typography>User Profile</Typography>
+        <IconButton onClick={onClose} size="small">
+          <Close />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent sx={{ pt: 3 }}>
+        {isLoading ? (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <Skeleton variant="circular" width={150} height={150} sx={{ mb: 2 }} />
+              <Skeleton variant="text" width="50%" height={40} />
+              <Skeleton variant="text" width="70%" height={30} sx={{ mt: 1 }} />
+            </Box>
+            <Skeleton variant="rectangular" height={100} />
+            <Skeleton variant="rectangular" height={200} />
+          </Box>
+        ) : (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {/* Header Section */}
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+              <Avatar
+                src={user.image}
+                alt={user.name}
+                sx={{
+                  width: 150,
+                  height: 150,
+                  mb: 2,
+                  border: "4px solid",
+                  borderColor: "primary.main",
+                }}
+              />
+
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+                {user.name}
+              </Typography>
+
+              {user.bio && (
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 2, maxWidth: "90%" }}>
+                  {user.bio}
+                </Typography>
+              )}
+            </Box>
+
+            {/* Stats Grid */}
+            {userStats && (
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+                <Paper sx={{ p: 2, textAlign: "center", bgcolor: "primary.light", color: "primary.contrastText" }}>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Total Points This Year
+                  </Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                    {userStats.totalPoints}
+                  </Typography>
+                </Paper>
+                <Paper sx={{ p: 2, textAlign: "center", bgcolor: "secondary.light", color: "secondary.contrastText" }}>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Current Season
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                    {weekData?.season}
+                  </Typography>
+                </Paper>
+              </Box>
+            )}
+
+            {/* Weekly Points Table */}
+            {userStats && weekData && (
+              <Box>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                  Weekly Points
+                </Typography>
+                <TableContainer component={Paper}>
+                  <Table size="small">
+                    <TableHead sx={{ bgcolor: "primary.main" }}>
+                      <TableRow>
+                        <TableCell sx={{ color: "white", fontWeight: 600 }}>Week</TableCell>
+                        <TableCell align="center" sx={{ color: "white", fontWeight: 600 }}>
+                          Points Earned
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {Array.from({ length: weekData.week - 1 }, (_, i) => i + 1).map((week) => (
+                        <TableRow key={week} sx={{ "&:hover": { bgcolor: "action.hover" } }}>
+                          <TableCell sx={{ fontWeight: 500 }}>Week {week}</TableCell>
+                          <TableCell align="center" sx={{ fontWeight: 600 }}>
+                            {userStats[`week${week}`] || 0}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            )}
+
+            {user.email && (
+              <Box sx={{ pt: 2, borderTop: "1px solid", borderColor: "divider" }}>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Email:</strong> {user.email}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
