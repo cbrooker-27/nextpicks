@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { Card, CardContent, Typography, Avatar, Box } from "@mui/material";
+import React, { useMemo, useState } from "react";
+import { Card, CardContent, Typography, Avatar, Box, Switch, FormControlLabel } from "@mui/material";
 
 /**
  * TopThreeWidget
@@ -12,12 +12,17 @@ import { Card, CardContent, Typography, Avatar, Box } from "@mui/material";
  * Displays the top 3 users from the previous week with medal decorations.
  */
 export default function TopThreeWidget({ userStats = [], week }) {
+  const [includeNpc, setIncludeNpc] = useState(true);
   const lastWeekNum = week?.week ? week.week - 1 : null;
 
   // compute competition-style ranks (ties get same rank, next rank skips accordingly)
   const topRanks = useMemo(() => {
     if (!lastWeekNum) return [];
-    const arr = (userStats || []).map((u) => ({
+    let filteredStats = userStats || [];
+    if (!includeNpc) {
+      filteredStats = filteredStats.filter((u) => !u.npc);
+    }
+    const arr = filteredStats.map((u) => ({
       name: u.name,
       image: u.image || null,
       points: Number(u["week" + lastWeekNum] || 0),
@@ -41,7 +46,7 @@ export default function TopThreeWidget({ userStats = [], week }) {
 
     // keep everyone with rank <= 3 (this handles ties)
     return ranked.filter((u) => u.rank <= 3);
-  }, [userStats, lastWeekNum]);
+  }, [userStats, lastWeekNum, includeNpc]);
 
   const medalStyle = (pos) => {
     switch (pos) {
@@ -61,9 +66,16 @@ export default function TopThreeWidget({ userStats = [], week }) {
   return (
     <Card>
       <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Top 3 — Week {lastWeekNum ?? "-"}
-        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+          <Typography variant="h6" sx={{ mb: 0 }}>
+            Top 3 — Week {lastWeekNum ?? "-"}
+          </Typography>
+          <FormControlLabel
+            control={<Switch checked={includeNpc} onChange={(e) => setIncludeNpc(e.target.checked)} size="small" />}
+            label="Include NPCs"
+            sx={{ mb: 0 }}
+          />
+        </Box>
 
         {topRanks.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
