@@ -39,6 +39,10 @@ export default function ProfileModal({ open, onClose, user }) {
         // Get stats up to current week
         const stats = await getUserStatsForStandings(currentWeek, false);
         const userStat = stats.find((u) => u.name === user.name);
+        // Store all stats for ranking calculations
+        if (userStat) {
+          userStat._allStats = stats;
+        }
         setUserStats(userStat);
       } catch (error) {
         console.error("Error fetching user stats:", error);
@@ -122,26 +126,36 @@ export default function ProfileModal({ open, onClose, user }) {
             </Box>
 
             {/* Stats Grid */}
-            {userStats && (
-              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
-                <Paper sx={{ p: 2, textAlign: "center", bgcolor: "primary.light", color: "primary.contrastText" }}>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Total Points This Year
-                  </Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                    {userStats.totalPoints}
-                  </Typography>
-                </Paper>
-                <Paper sx={{ p: 2, textAlign: "center", bgcolor: "secondary.light", color: "secondary.contrastText" }}>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Current Season
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                    {weekData?.season}
-                  </Typography>
-                </Paper>
-              </Box>
-            )}
+            {userStats && (() => {
+              // Calculate overall position with tie handling
+              const allStats = userStats._allStats || [];
+              const uniquePoints = Array.from(new Set(allStats.map((u) => u.totalPoints))).sort((a, b) => b - a);
+              const overallPositionIndex = uniquePoints.indexOf(userStats.totalPoints);
+              const overallPosition = overallPositionIndex + 1;
+              const tiedUsers = allStats.filter((u) => u.totalPoints === userStats.totalPoints).length;
+              const positionDisplay = tiedUsers > 1 ? `#${overallPosition}T` : `#${overallPosition}`;
+
+              return (
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+                  <Paper sx={{ p: 2, textAlign: "center", bgcolor: "primary.light", color: "primary.contrastText" }}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      Total Points This Year
+                    </Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                      {userStats.totalPoints}
+                    </Typography>
+                  </Paper>
+                  <Paper sx={{ p: 2, textAlign: "center", bgcolor: "secondary.light", color: "secondary.contrastText" }}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      Overall Position
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                      {positionDisplay}
+                    </Typography>
+                  </Paper>
+                </Box>
+              );
+            })()}
 
             {/* Weekly Points Table */}
             {userStats && weekData && (
@@ -157,17 +171,41 @@ export default function ProfileModal({ open, onClose, user }) {
                         <TableCell align="center" sx={{ color: "white", fontWeight: 600 }}>
                           Points Earned
                         </TableCell>
+                        <TableCell align="center" sx={{ color: "white", fontWeight: 600 }}>
+                          Place
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {Array.from({ length: weekData.week - 1 }, (_, i) => i + 1).map((week) => (
-                        <TableRow key={week} sx={{ "&:hover": { bgcolor: "action.hover" } }}>
-                          <TableCell sx={{ fontWeight: 500 }}>Week {week}</TableCell>
-                          <TableCell align="center" sx={{ fontWeight: 600 }}>
-                            {userStats[`week${week}`] || 0}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {Array.from({ length: weekData.week - 1 }, (_, i) => i + 1).map((week) => {
+                        // Calculate the user's position for this week with tie handling
+                        const allStats = [...(userStats._allStats || [])];
+                        const weekKey = `week${week}`;
+                        const userPoints = userStats[weekKey] || 0;
+                        
+                        // Get all unique point values for this week, sorted descending
+                        const uniquePoints = Array.from(new Set(allStats.map((u) => u[weekKey] || 0))).sort((a, b) => b - a);
+                        
+                        // Find the user's position based on unique point values
+                        const userPositionIndex = uniquePoints.indexOf(userPoints);
+                        const userPosition = userPositionIndex + 1;
+                        
+                        // Count how many users are tied at this position
+                        const tiedUsers = allStats.filter((u) => (u[weekKey] || 0) === userPoints).length;
+                        const positionDisplay = tiedUsers > 1 ? `#${userPosition}T` : `#${userPosition}`;
+
+                        return (
+                          <TableRow key={week} sx={{ "&:hover": { bgcolor: "action.hover" } }}>
+                            <TableCell sx={{ fontWeight: 500 }}>Week {week}</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 600 }}>
+                              {userPoints}
+                            </TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 600 }}>
+                              {positionDisplay}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </TableContainer>

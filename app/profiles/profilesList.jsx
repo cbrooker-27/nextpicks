@@ -164,9 +164,12 @@ export default function ProfilesList() {
                     )}
                   </Box>
 
-                  <Typography variant="h6" sx={{ mb: 0.5, fontWeight: 600 }}>
-                    {user.name}
-                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, mb: 0.5 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      {user.name}
+                    </Typography>
+                    {user.npc && <SmartToy sx={{ fontSize: 18, color: "secondary.main" }} />}
+                  </Box>
 
                   {user.bio && (
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, minHeight: 40 }}>
