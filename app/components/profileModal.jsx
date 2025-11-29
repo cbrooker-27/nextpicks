@@ -126,36 +126,39 @@ export default function ProfileModal({ open, onClose, user }) {
             </Box>
 
             {/* Stats Grid */}
-            {userStats && (() => {
-              // Calculate overall position with tie handling
-              const allStats = userStats._allStats || [];
-              const uniquePoints = Array.from(new Set(allStats.map((u) => u.totalPoints))).sort((a, b) => b - a);
-              const overallPositionIndex = uniquePoints.indexOf(userStats.totalPoints);
-              const overallPosition = overallPositionIndex + 1;
-              const tiedUsers = allStats.filter((u) => u.totalPoints === userStats.totalPoints).length;
-              const positionDisplay = tiedUsers > 1 ? `#${overallPosition}T` : `#${overallPosition}`;
+            {userStats &&
+              (() => {
+                // Calculate overall position with tie handling
+                const allStats = userStats._allStats || [];
+                const uniquePoints = Array.from(new Set(allStats.map((u) => u.totalPoints))).sort((a, b) => b - a);
+                const overallPositionIndex = uniquePoints.indexOf(userStats.totalPoints);
+                const overallPosition = overallPositionIndex + 1;
+                const tiedUsers = allStats.filter((u) => u.totalPoints === userStats.totalPoints).length;
+                const positionDisplay = tiedUsers > 1 ? `#${overallPosition}T` : `#${overallPosition}`;
 
-              return (
-                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
-                  <Paper sx={{ p: 2, textAlign: "center", bgcolor: "primary.light", color: "primary.contrastText" }}>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      Total Points This Year
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                      {userStats.totalPoints}
-                    </Typography>
-                  </Paper>
-                  <Paper sx={{ p: 2, textAlign: "center", bgcolor: "secondary.light", color: "secondary.contrastText" }}>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      Overall Position
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                      {positionDisplay}
-                    </Typography>
-                  </Paper>
-                </Box>
-              );
-            })()}
+                return (
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+                    <Paper sx={{ p: 2, textAlign: "center", bgcolor: "primary.light", color: "primary.contrastText" }}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+                        Total Points This Year
+                      </Typography>
+                      <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                        {userStats.totalPoints}
+                      </Typography>
+                    </Paper>
+                    <Paper
+                      sx={{ p: 2, textAlign: "center", bgcolor: "secondary.light", color: "secondary.contrastText" }}
+                    >
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+                        Overall Position
+                      </Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                        {positionDisplay}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                );
+              })()}
 
             {/* Weekly Points Table */}
             {userStats && weekData && (
@@ -182,14 +185,16 @@ export default function ProfileModal({ open, onClose, user }) {
                         const allStats = [...(userStats._allStats || [])];
                         const weekKey = `week${week}`;
                         const userPoints = userStats[weekKey] || 0;
-                        
+
                         // Get all unique point values for this week, sorted descending
-                        const uniquePoints = Array.from(new Set(allStats.map((u) => u[weekKey] || 0))).sort((a, b) => b - a);
-                        
+                        const uniquePoints = Array.from(new Set(allStats.map((u) => u[weekKey] || 0))).sort(
+                          (a, b) => b - a
+                        );
+
                         // Find the user's position based on unique point values
                         const userPositionIndex = uniquePoints.indexOf(userPoints);
                         const userPosition = userPositionIndex + 1;
-                        
+
                         // Count how many users are tied at this position
                         const tiedUsers = allStats.filter((u) => (u[weekKey] || 0) === userPoints).length;
                         const positionDisplay = tiedUsers > 1 ? `#${userPosition}T` : `#${userPosition}`;
