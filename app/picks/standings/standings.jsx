@@ -52,7 +52,7 @@ export default function Standings() {
 
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ margin: 0 }}>Standings up to week {week.week}</h2>
           <FormControlLabel
@@ -69,7 +69,14 @@ export default function Standings() {
           <Chip
             key={user.name}
             avatar={
-              <Avatar alt={user.name} src={user?.image}>
+              <Avatar
+                alt={user.name}
+                src={user?.image}
+                sx={{
+                  border: user?.npc ? "2px solid orange" : "2px solid transparent",
+                  boxSizing: "border-box",
+                }}
+              >
                 {user?.name.substring(0, 1)}
               </Avatar>
             }
@@ -77,6 +84,7 @@ export default function Standings() {
             variant={user.name === session?.user?.name ? "filled" : "outlined"}
             color={user.name === session?.user?.name ? "primary" : "default"}
             onClick={() => handleOpenModal(user)}
+            sx={user?.npc ? { border: "1px solid orange" } : undefined}
           />
         ))}
       </div>
