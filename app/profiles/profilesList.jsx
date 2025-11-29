@@ -14,10 +14,9 @@ import {
   TextField,
   InputAdornment,
 } from "@mui/material";
-import { Search, Mail, Edit } from "@mui/icons-material";
+import { Search, Mail, Edit, SmartToy } from "@mui/icons-material";
 import { getAllUserFromDb } from "@/app/utils/db";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import ProfileModal from "@/app/components/profileModal";
 
 export default function ProfilesList() {
@@ -27,7 +26,6 @@ export default function ProfilesList() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const { data: session } = useSession();
-  const router = useRouter();
 
   useEffect(() => {
     async function fetchUsers() {
@@ -44,8 +42,12 @@ export default function ProfilesList() {
     void fetchUsers();
   }, []);
 
-  // Filter users based on search query
-  const filteredUsers = users.filter((user) => user.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Filter users based on search query and active status
+  const filteredUsers = users.filter((user) => {
+    const isActive = user.activeSeasons?.includes("2025");
+    const matchesSearch = user.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    return isActive && matchesSearch;
+  });
 
   const handleOpenModal = (user) => {
     setSelectedUser(user);
@@ -131,18 +133,36 @@ export default function ProfilesList() {
                 }}
               >
                 <CardContent sx={{ textAlign: "center", flexGrow: 1 }}>
-                  <Avatar
-                    src={user.image}
-                    alt={user.name}
-                    sx={{
-                      width: 100,
-                      height: 100,
-                      mx: "auto",
-                      mb: 2,
-                      border: "3px solid",
-                      borderColor: "primary.main",
-                    }}
-                  />
+                  <Box sx={{ position: "relative", display: "inline-block", mb: 2 }}>
+                    <Avatar
+                      src={user.image}
+                      alt={user.name}
+                      sx={{
+                        width: 100,
+                        height: 100,
+                        border: "3px solid",
+                        borderColor: "primary.main",
+                      }}
+                    />
+                    {user.npc && (
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          bottom: 0,
+                          right: 0,
+                          bgcolor: "secondary.main",
+                          borderRadius: "50%",
+                          p: 0.5,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          border: "2px solid white",
+                        }}
+                      >
+                        <SmartToy sx={{ fontSize: 20, color: "white" }} />
+                      </Box>
+                    )}
+                  </Box>
 
                   <Typography variant="h6" sx={{ mb: 0.5, fontWeight: 600 }}>
                     {user.name}

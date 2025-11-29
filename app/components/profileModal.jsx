@@ -18,7 +18,7 @@ import {
   TableRow,
   Skeleton,
 } from "@mui/material";
-import { Close } from "@mui/icons-material";
+import { Close, SmartToy } from "@mui/icons-material";
 import { getUserStatsForStandings } from "@/app/serverActions/users";
 import { getCurrentWeek } from "@/app/utils/db";
 
@@ -76,21 +76,43 @@ export default function ProfileModal({ open, onClose, user }) {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {/* Header Section */}
             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-              <Avatar
-                src={user.image}
-                alt={user.name}
-                sx={{
-                  width: 150,
-                  height: 150,
-                  mb: 2,
-                  border: "4px solid",
-                  borderColor: "primary.main",
-                }}
-              />
+              <Box sx={{ position: "relative", display: "inline-block", mb: 2 }}>
+                <Avatar
+                  src={user.image}
+                  alt={user.name}
+                  sx={{
+                    width: 150,
+                    height: 150,
+                    border: "4px solid",
+                    borderColor: "primary.main",
+                  }}
+                />
+                {user.npc && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      bottom: 0,
+                      right: 0,
+                      bgcolor: "secondary.main",
+                      borderRadius: "50%",
+                      p: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: "2px solid white",
+                    }}
+                  >
+                    <SmartToy sx={{ fontSize: 28, color: "white" }} />
+                  </Box>
+                )}
+              </Box>
 
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-                {user.name}
-              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                  {user.name}
+                </Typography>
+                {user.npc && <SmartToy sx={{ fontSize: 24, color: "secondary.main" }} />}
+              </Box>
 
               {user.bio && (
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 2, maxWidth: "90%" }}>
