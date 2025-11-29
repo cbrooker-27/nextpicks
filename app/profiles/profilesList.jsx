@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Container,
   Card,
@@ -9,12 +9,12 @@ import {
   Avatar,
   Typography,
   Box,
-  Button,
   Skeleton,
   TextField,
   InputAdornment,
+  CardActionArea,
 } from "@mui/material";
-import { Search, Mail, Edit, SmartToy } from "@mui/icons-material";
+import { Search, SmartToy } from "@mui/icons-material";
 import { getAllUserFromDb } from "@/app/utils/db";
 import { useSession } from "next-auth/react";
 import ProfileModal from "@/app/components/profileModal";
@@ -132,66 +132,49 @@ export default function ProfilesList() {
                   },
                 }}
               >
-                <CardContent sx={{ textAlign: "center", flexGrow: 1 }}>
-                  <Box sx={{ position: "relative", display: "inline-block", mb: 2 }}>
-                    <Avatar
-                      src={user.image}
-                      alt={user.name}
-                      sx={{
-                        width: 100,
-                        height: 100,
-                        border: "3px solid",
-                        borderColor: "primary.main",
-                      }}
-                    />
-                    {user.npc && (
-                      <Box
+                <CardActionArea onClick={() => handleOpenModal(user)}>
+                  <CardContent sx={{ textAlign: "center", flexGrow: 1 }}>
+                    <Box sx={{ position: "relative", display: "inline-block", mb: 2 }}>
+                      <Avatar
+                        src={user.image}
+                        alt={user.name}
                         sx={{
-                          position: "absolute",
-                          bottom: 0,
-                          right: 0,
-                          bgcolor: "secondary.main",
-                          borderRadius: "50%",
-                          p: 0.5,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          border: "2px solid white",
+                          width: 100,
+                          height: 100,
+                          border: "3px solid",
+                          borderColor: "primary.main",
                         }}
-                      >
-                        <SmartToy sx={{ fontSize: 20, color: "white" }} />
-                      </Box>
-                    )}
-                  </Box>
-
-                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, mb: 0.5 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      {user.name}
-                    </Typography>
-                    {user.npc && <SmartToy sx={{ fontSize: 18, color: "secondary.main" }} />}
-                  </Box>
-
-                  {user.bio && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, minHeight: 40 }}>
-                      {user.bio}
-                    </Typography>
-                  )}
-
-                  {user.email && (
-                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, mt: 1 }}>
-                      <Mail sx={{ fontSize: 16, color: "text.secondary" }} />
-                      <Typography variant="body2" color="text.secondary" sx={{ wordBreak: "break-all" }}>
-                        {user.email}
-                      </Typography>
+                      />
+                      {user.npc && (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            bottom: 0,
+                            right: 0,
+                            bgcolor: "secondary.main",
+                            borderRadius: "50%",
+                            p: 0.5,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: "2px solid white",
+                          }}
+                        >
+                          <SmartToy sx={{ fontSize: 20, color: "white" }} />
+                        </Box>
+                      )}
                     </Box>
-                  )}
-                </CardContent>
 
-                <CardActions sx={{ justifyContent: "center", pt: 0 }}>
-                  <Button size="small" onClick={() => handleOpenModal(user)}>
-                    View Profile
-                  </Button>
-                </CardActions>
+                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, mb: 0.5 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        {user.name}
+                      </Typography>
+                      {user.npc && <SmartToy sx={{ fontSize: 18, color: "secondary.main" }} />}
+                    </Box>
+                  </CardContent>
+
+                  <CardActions sx={{ justifyContent: "center", pt: 0 }}>View Profile</CardActions>
+                </CardActionArea>
               </Card>
             </Box>
           ))}

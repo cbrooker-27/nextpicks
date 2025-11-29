@@ -18,7 +18,7 @@ import {
   TableRow,
   Skeleton,
 } from "@mui/material";
-import { Close, SmartToy } from "@mui/icons-material";
+import { Close, SmartToy, EmojiEvents } from "@mui/icons-material";
 import { getUserStatsForStandings } from "@/app/serverActions/users";
 import { getCurrentWeek } from "@/app/utils/db";
 
@@ -136,8 +136,22 @@ export default function ProfileModal({ open, onClose, user }) {
                 const tiedUsers = allStats.filter((u) => u.totalPoints === userStats.totalPoints).length;
                 const positionDisplay = tiedUsers > 1 ? `#${overallPosition}T` : `#${overallPosition}`;
 
+                // Calculate first place finishes
+                let firstPlaceCount = 0;
+                for (let week = 1; week < weekData.week; week++) {
+                  const weekKey = `week${week}`;
+                  const userWeekPoints = userStats[weekKey] || 0;
+                  const uniqueWeekPoints = Array.from(new Set(allStats.map((u) => u[weekKey] || 0))).sort(
+                    (a, b) => b - a
+                  );
+                  const weekPositionIndex = uniqueWeekPoints.indexOf(userWeekPoints);
+                  if (weekPositionIndex === 0) {
+                    firstPlaceCount++;
+                  }
+                }
+
                 return (
-                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 2 }}>
                     <Paper sx={{ p: 2, textAlign: "center", bgcolor: "primary.light", color: "primary.contrastText" }}>
                       <Typography variant="body2" sx={{ mb: 1 }}>
                         Total Points This Year
@@ -154,6 +168,17 @@ export default function ProfileModal({ open, onClose, user }) {
                       </Typography>
                       <Typography variant="h5" sx={{ fontWeight: 600 }}>
                         {positionDisplay}
+                      </Typography>
+                    </Paper>
+                    <Paper sx={{ p: 2, textAlign: "center", bgcolor: "#FFD700", color: "#333" }}>
+                      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, mb: 1 }}>
+                        <EmojiEvents sx={{ fontSize: 24 }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          Weekly Wins
+                        </Typography>
+                      </Box>
+                      <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                        {firstPlaceCount}
                       </Typography>
                     </Paper>
                   </Box>
