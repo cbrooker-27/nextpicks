@@ -4,7 +4,8 @@ import { getTeamStatisticsFromMsf, getGamesForWeekFromMsf } from "@/app/lib/msf"
 import { getCurrentWeek, getPickedGames, getThisYearsActiveUsers, getAllGames } from "@/app/utils/db";
 import { useSearchParams } from "next/navigation";
 import GameScoreTile from "@/app/components/games/gameScoreTile";
-import { Skeleton, Chip, Avatar, Tooltip, Switch } from "@mui/material";
+import { Skeleton, Chip, Avatar, Tooltip, Switch, FormControlLabel, Box } from "@mui/material";
+import { SmartToy } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { SeasonStatisticsContext } from "@/app/context/SeasonStatistics";
@@ -15,6 +16,7 @@ export default function ViewPicks() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeUsers, setActiveUsers] = useState([]);
   const [showInProgress, setShowInProgress] = useState(true);
+  const [includeNpc, setIncludeNpc] = useState(true);
   const [teamDetails, setTeamDetails] = useState([]);
   const [seasonData, setSeasonData] = useState([]);
   const [week, setWeek] = useState(null);
@@ -62,49 +64,73 @@ export default function ViewPicks() {
         Viewing picks for week {week.week}, {week.season}
       </h2>
       {!historicalWeek && (
-        <>
-          <Switch checked={showInProgress} onChange={() => setShowInProgress(!showInProgress)} />
-          Show points from in-progress games
-        </>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <FormControlLabel
+            control={<Switch checked={showInProgress} onChange={() => setShowInProgress(!showInProgress)} />}
+            label="Show points from in-progress games"
+          />
+          <FormControlLabel
+            control={<Switch checked={includeNpc} onChange={(e) => setIncludeNpc(e.target.checked)} />}
+            label={
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                Include NPCs
+                <SmartToy sx={{ fontSize: 18 }} />
+              </Box>
+            }
+          />
+        </Box>
       )}
       {!historicalWeek && showInProgress ? (
         <div>
           <h2>Including In-Progress</h2>
           {activeUsers
+            .filter((u) => (includeNpc ? true : !u.npc))
             .sort((a, b) => b.points + b.volatilePoints - a.points - a.volatilePoints)
             .map((user) => (
               <Tooltip key={user.name} title={user.name} arrow>
                 <Chip
                   key={user.name}
                   avatar={
-                    <Avatar alt={user.name} src={user?.image}>
+                    <Avatar
+                      alt={user.name}
+                      src={user?.image}
+                      sx={{ border: user?.npc ? "2px solid orange" : "2px solid transparent", boxSizing: "border-box" }}
+                    >
                       {user?.name.substring(0, 1)}
                     </Avatar>
                   }
                   label={user.points + user.volatilePoints}
                   variant={user.name === session?.user?.name ? "filled" : "outlined"}
                   color={user.name === session?.user?.name ? "primary" : "default"}
+                  sx={user?.npc ? { border: "1px solid orange" } : undefined}
                 />
               </Tooltip>
             ))}
         </div>
       ) : (
         <div>
-          {activeUsers.map((user) => (
-            <Tooltip key={user.name} title={user.name} arrow>
-              <Chip
-                key={user.name}
-                avatar={
-                  <Avatar alt={user.name} src={user?.image}>
-                    {user?.name.substring(0, 1)}
-                  </Avatar>
-                }
-                label={user.points}
-                variant={user.name === session?.user?.name ? "filled" : "outlined"}
-                color={user.name === session?.user?.name ? "primary" : "default"}
-              />
-            </Tooltip>
-          ))}
+          {activeUsers
+            .filter((u) => (includeNpc ? true : !u.npc))
+            .map((user) => (
+              <Tooltip key={user.name} title={user.name} arrow>
+                <Chip
+                  key={user.name}
+                  avatar={
+                    <Avatar
+                      alt={user.name}
+                      src={user?.image}
+                      sx={{ border: user?.npc ? "2px solid orange" : "2px solid transparent", boxSizing: "border-box" }}
+                    >
+                      {user?.name.substring(0, 1)}
+                    </Avatar>
+                  }
+                  label={user.points}
+                  variant={user.name === session?.user?.name ? "filled" : "outlined"}
+                  color={user.name === session?.user?.name ? "primary" : "default"}
+                  sx={user?.npc ? { border: "1px solid orange" } : undefined}
+                />
+              </Tooltip>
+            ))}
         </div>
       )}
       <br />
@@ -119,6 +145,7 @@ export default function ViewPicks() {
               users={activeUsers}
               activeUser={session?.user}
               teamDetails={teamDetails}
+              includeNpc={includeNpc}
             />
           );
         })}
