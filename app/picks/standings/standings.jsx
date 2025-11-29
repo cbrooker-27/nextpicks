@@ -21,7 +21,7 @@ export default function Standings() {
   useEffect(() => {
     async function fetchData() {
       const currentWeek = await getCurrentWeek();
-      const stats = await getUserStatsForStandings(currentWeek, true);
+      const stats = await getUserStatsForStandings({ ...currentWeek, week: currentWeek.week - 1 }, false);
       setUserStats(stats);
       setWeek(currentWeek);
     }

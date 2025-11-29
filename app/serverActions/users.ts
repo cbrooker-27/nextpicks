@@ -1,7 +1,7 @@
 import { getGamesForWeekFromMsf } from "@/app/lib/msf";
 import { getPickedGames, getThisYearsActiveUsers, getAllPickedGames } from "@/app/utils/db";
 
-export async function getUserStatsForStandings(week,includCurrentWeek) {
+export async function getUserStatsForStandings(week,includeCurrentWeek) {
   const activeUsers = JSON.parse(await getThisYearsActiveUsers());
 
   activeUsers.forEach((user) => {
@@ -15,7 +15,7 @@ export async function getUserStatsForStandings(week,includCurrentWeek) {
 
   for (let i = 1; i <= week.week; i++) {
     //const pickedGames = JSON.parse(await getPickedGames({ week: i, season: week.season }));
-    if (includCurrentWeek && i === week.week) {
+    if (includeCurrentWeek && i === week.week) {
         //this means we can run into live scores, we don't have thosein our db, so get them from msf
         gamesWithScores = await getGamesForWeekFromMsf({ week: "" + i, season: "" + week.season });
     }
@@ -27,7 +27,7 @@ export async function getUserStatsForStandings(week,includCurrentWeek) {
     });
 
     allPickedGames.filter((game) => game.week === i).map((game) => {
-        if (includCurrentWeek && i === week.week) {
+        if (includeCurrentWeek && i === week.week) {
             const gameData = gamesWithScores.find((g) => g._id === game._id);
             game.awayScore = gameData.awayScore;
             game.homeScore = gameData.homeScore;
