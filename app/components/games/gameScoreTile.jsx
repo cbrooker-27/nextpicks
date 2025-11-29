@@ -4,7 +4,7 @@ import TeamTile from "../teams/teamTile";
 import { Chip, Tooltip, Avatar, AvatarGroup } from "@mui/material";
 import { LooksOne, LooksTwo, Looks3, Looks4, Sports, LiveTv, Update } from "@mui/icons-material";
 
-export default function GameScoreTile({ game, liveDetails, users, activeUser, teamDetails, includeNpc }) {
+export default function GameScoreTile({ game, liveDetails, users, activeUser, teamDetails, includeNpc = true }) {
   const startTime = new Date(game.startTime);
   const favorite = structuredClone(game.awayFavorite ? game.away : game.home);
   const underdog = structuredClone(game.awayFavorite ? game.home : game.away);
@@ -33,6 +33,7 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
 
   const generateAvatar = (choice) => {
     const user = users.find((user) => user.name === choice.userId);
+    if (!user) return null;
     if (user.npc && !includeNpc) return null;
     return (
       <Tooltip key={choice.userId} title={choice.userId} arrow>
@@ -59,7 +60,9 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
       if (choice.choice === "ff") {
         return generateAvatar(choice);
       }
+      return null;
     })
+    .filter(Boolean)
     .sort((a, b) => (a.key === activeUser?.name ? 1 : -1));
 
   const ufAvatars = game.userChoices
@@ -67,7 +70,9 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
       if (choice.choice === "uf") {
         return generateAvatar(choice);
       }
+      return null;
     })
+    .filter(Boolean)
     .sort((a, b) => (a.key === activeUser?.name ? 1 : -1));
 
   const uuAvatars = game.userChoices
@@ -75,7 +80,9 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
       if (choice.choice === "uu") {
         return generateAvatar(choice);
       }
+      return null;
     })
+    .filter(Boolean)
     .sort((a, b) => (a.key === activeUser?.name ? 1 : -1));
 
   const liveLabel = liveDetails.intermission
