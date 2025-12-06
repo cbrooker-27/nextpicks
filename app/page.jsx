@@ -7,6 +7,7 @@ import cssStyles from "./page.module.css";
 import { SeasonStatisticsProvider } from "./context/SeasonStatistics";
 import WeeklyScoreCard from "./components/WeeklyScoreCard";
 import TopThreeWidget from "./components/TopThreeWidget";
+import LeaderBoard from "./components/leaderBoard";
 import { getUserStatsForStandings } from "./serverActions/users";
 
 export default function Home() {
@@ -88,6 +89,8 @@ export default function Home() {
             />
             {/* Top 3 users from last week */}
             <TopThreeWidget userStats={userStats} week={week} />
+            {/* Year leader board */}
+            <LeaderBoard userStats={userStats} />
           </>
         )}
         <Card>
