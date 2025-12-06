@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, Typography, Avatar, Box, Switch, FormControlLabel } from "@mui/material";
+import { useState, useMemo } from "react";
+import { Card, CardContent, Typography, Avatar, Box, Switch, FormControlLabel, Chip } from "@mui/material";
+import { useSession } from "next-auth/react";
 
 export default function LeaderBoard({ userStats = [] }) {
   const [includeNpc, setIncludeNpc] = useState(true);
 
-  // compute competition-style top ranks by totalPoints
-  const getTop3 = () => {
+  const { data: session } = useSession();
+
+  // compute competition-style ranks by totalPoints (pure computation, no reassign outside function)
+  const { rankedAll, topRanks } = useMemo(() => {
     let arr = (userStats || []).map((u) => ({
       name: u.name,
       image: u.image || null,
@@ -21,21 +24,24 @@ export default function LeaderBoard({ userStats = [] }) {
 
     arr.sort((a, b) => b.points - a.points);
 
+    const ranked = [];
     let prevPoints = null;
     let prevRank = 0;
-    const ranked = arr.map((u, idx) => {
+    for (let i = 0; i < arr.length; i++) {
+      const u = arr[i];
+      let rank;
       if (u.points === prevPoints) {
-        return { ...u, rank: prevRank };
+        rank = prevRank;
+      } else {
+        rank = i + 1;
+        prevPoints = u.points;
+        prevRank = rank;
       }
-      const rank = idx + 1;
-      prevPoints = u.points;
-      prevRank = rank;
-      return { ...u, rank };
-    });
+      ranked.push({ ...u, rank });
+    }
 
-    return ranked.filter((u) => u.rank <= 3);
-  };
-  const topRanks = getTop3();
+    return { rankedAll: ranked, topRanks: ranked.filter((u) => u.rank <= 3) };
+  }, [userStats, includeNpc]);
 
   const medalStyle = (pos) => {
     switch (pos) {
@@ -136,6 +142,41 @@ export default function LeaderBoard({ userStats = [] }) {
             })}
           </Box>
         )}
+        {/* show logged-in user's position if they're not in the top ranks */}
+        {session?.user?.name &&
+          rankedAll &&
+          !topRanks.some((u) => u.name === session.user.name) &&
+          (() => {
+            const me = rankedAll.find((u) => u.name === session.user.name);
+            if (!me) return null;
+            const tiedUsers = rankedAll.filter((u) => u.points === me.points).length;
+            const posDisplay = tiedUsers > 1 ? `T#${me.rank}` : `#${me.rank}`;
+            return (
+              <Box sx={{ mt: 2, textAlign: "center" }}>
+                <Typography variant="subtitle2">You</Typography>
+                <Chip
+                  label={`${posDisplay} ${me.points} pts 😢`}
+                  avatar={
+                    <Avatar
+                      alt={me.name}
+                      src={me.image}
+                      sx={{
+                        border: "2px solid transparent",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      {me.name.substring(0, 1)}
+                    </Avatar>
+                  }
+                />
+                {/* <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, mt: 1 }}>
+                  <Typography variant="h6">{posDisplay}</Typography>
+                  <Typography variant="h6">{me.points} pts</Typography>
+                  <Typography variant="h5">{"😢"}</Typography>
+                </Box> */}
+              </Box>
+            );
+          })()}
       </CardContent>
     </Card>
   );
