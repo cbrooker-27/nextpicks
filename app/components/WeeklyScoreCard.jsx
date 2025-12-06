@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Card, CardActions, Button, CardContent, Typography, CardMedia } from "@mui/material";
+import { Card, CardActions, Button, CardContent, Typography, CardMedia, Chip, Box } from "@mui/material";
 import { useSeasonStatistics } from "../context/SeasonStatistics";
 import Slider from "@mui/material/Slider";
 import { useRouter } from "next/navigation";
@@ -18,15 +18,35 @@ import { useRouter } from "next/navigation";
 export default function WeeklyScoreCard({ userName, week, userStats, pickedThisWeek = false, currentWeek = false }) {
   const router = useRouter();
   const seasonStatistics = useSeasonStatistics();
-  const { points, possiblePoints, leader } = useMemo(() => {
+  const { points, possiblePoints, leader, positionDisplay, positionNumber, medalEmoji, isLive } = useMemo(() => {
     const userStat = userStats.find((u) => u.name === userName);
     const pts = userStat ? userStat["week" + week.week] : 0;
     const count = userStat ? userStat["possiblePoints" + week.week] : 0;
 
     const leader = userStats.reduce((max, u) => Math.max(max, u["week" + week.week] || 0), 0);
 
-    return { points: pts, possiblePoints: count, leader };
-  }, [userName, week, userStats]);
+    // compute position with tie handling for this week
+    const allPoints = userStats.map((u) => u["week" + week.week] || 0).sort((a, b) => b - a);
+    // const uniquePoints = Array.from(new Set(allPoints)).sort((a, b) => b - a);
+    const posIndex = allPoints.indexOf(pts);
+    const positionNumber = posIndex >= 0 ? posIndex + 1 : null;
+    const tiedCount = userStats.filter((u) => (u["week" + week.week] || 0) === pts).length;
+    const positionDisplay = positionNumber ? (tiedCount > 1 ? `T#${positionNumber}` : `#${positionNumber}`) : null;
+    let medalEmoji = "";
+    if (positionNumber === 1) medalEmoji = "🥇";
+    else if (positionNumber === 2) medalEmoji = "🥈";
+    else if (positionNumber === 3) medalEmoji = "🥉";
+    else medalEmoji = "😢";
+
+    // determine live vs final using seasonStatistics (games for the week)
+    const seasonData = seasonStatistics?.seasonData || [];
+    const gamesForWeek = seasonData.filter((g) => Number(g.week) === Number(week.week));
+    const isLive = gamesForWeek.some(
+      (g) => !(g.playedStatus && g.playedStatus.startsWith && g.playedStatus.startsWith("COMPLETED"))
+    );
+
+    return { points: pts, possiblePoints: count, leader, positionDisplay, positionNumber, medalEmoji, isLive };
+  }, [userName, week, userStats, seasonStatistics]);
 
   const marks = [
     { value: 0, label: "0" },
@@ -39,9 +59,25 @@ export default function WeeklyScoreCard({ userName, week, userStats, pickedThisW
   return userStats && userStats.length > 0 ? (
     <Card>
       <CardContent sx={{ backgroundColor: currentWeek ? (pickedThisWeek ? "green" : "yellow") : "default" }}>
-        <Typography variant="h6">
-          {currentWeek ? (pickedThisWeek ? "Thanks for picking!" : "You need to pick!") : ""}
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
+          <Typography variant="h6">
+            {currentWeek ? (pickedThisWeek ? "Thanks for picking!" : "You need to pick!") : ""}
+          </Typography>
+          {
+            /* Live/Final chip */
+            !currentWeek ? (
+              /* If not current week show finishing place and medal/sad emoji */
+
+              <Chip
+                label={`Finished ${positionDisplay}` + (positionNumber && positionNumber <= 3 ? medalEmoji : "😢")}
+              />
+            ) : (
+              <Chip
+                label={`Currently ${positionDisplay}` + (positionNumber && positionNumber <= 3 ? medalEmoji : "😢")}
+              />
+            )
+          }
+        </Box>
         {(!currentWeek || pickedThisWeek) && (
           <>
             <Typography variant="h2" sx={{ mb: 1 }}>

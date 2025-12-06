@@ -130,11 +130,12 @@ export default function ProfileModal({ open, onClose, user }) {
               (() => {
                 // Calculate overall position with tie handling
                 const allStats = userStats._allStats || [];
-                const uniquePoints = Array.from(new Set(allStats.map((u) => u.totalPoints))).sort((a, b) => b - a);
-                const overallPositionIndex = uniquePoints.indexOf(userStats.totalPoints);
+                const allPoints = allStats.map((u) => u.totalPoints).sort((a, b) => b - a);
+                // const uniquePoints = Array.from(new Set(allPoints)).sort((a, b) => b - a);
+                const overallPositionIndex = allPoints.indexOf(userStats.totalPoints);
                 const overallPosition = overallPositionIndex + 1;
                 const tiedUsers = allStats.filter((u) => u.totalPoints === userStats.totalPoints).length;
-                const positionDisplay = tiedUsers > 1 ? `#${overallPosition}T` : `#${overallPosition}`;
+                const positionDisplay = tiedUsers > 1 ? `T#${overallPosition}` : `#${overallPosition}`;
 
                 // Calculate first place finishes
                 let firstPlaceCount = 0;
@@ -212,17 +213,15 @@ export default function ProfileModal({ open, onClose, user }) {
                         const userPoints = userStats[weekKey] || 0;
 
                         // Get all unique point values for this week, sorted descending
-                        const uniquePoints = Array.from(new Set(allStats.map((u) => u[weekKey] || 0))).sort(
-                          (a, b) => b - a
-                        );
+                        const sortedPoints = allStats.map((u) => u[weekKey] || 0).sort((a, b) => b - a);
 
                         // Find the user's position based on unique point values
-                        const userPositionIndex = uniquePoints.indexOf(userPoints);
+                        const userPositionIndex = sortedPoints.indexOf(userPoints);
                         const userPosition = userPositionIndex + 1;
 
                         // Count how many users are tied at this position
                         const tiedUsers = allStats.filter((u) => (u[weekKey] || 0) === userPoints).length;
-                        const positionDisplay = tiedUsers > 1 ? `#${userPosition}T` : `#${userPosition}`;
+                        const positionDisplay = tiedUsers > 1 ? `T#${userPosition}` : `#${userPosition}`;
 
                         return (
                           <TableRow key={week} sx={{ "&:hover": { bgcolor: "action.hover" } }}>
