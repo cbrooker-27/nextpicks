@@ -2,7 +2,7 @@
 import { MongoClient, Db, WithId } from "mongodb";
 import { User, Game, UserChoice, WeekConfig } from "../../types";
 
-const uri = `mongodb+srv://${process.env.MONGODB_USER}:${process.env.MONGODB_PWD}@${process.env.MONGODB_SERVER}?retryWrites=true&w=majority`;
+const uri = process.env.MONGODB_URI || `mongodb+srv://${process.env.MONGODB_USER}:${process.env.MONGODB_PWD}@${process.env.MONGODB_SERVER}?retryWrites=true&w=majority`;
 
 export const getUserFromDb = async (username: string): Promise<WithId<User> | null> => {
   const client = await connectToDatabase();

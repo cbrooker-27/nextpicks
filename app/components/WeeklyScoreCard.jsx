@@ -84,7 +84,7 @@ export default function WeeklyScoreCard({ userName, week, userStats, pickedThisW
               {points}
             </Typography>
             <Typography variant="h6" sx={{ mb: 1 }}>
-              {currentWeek ? "This" : "Last"} Week&apos;s Score
+              {currentWeek ? "This " : "Last "}Week&apos;s Score
             </Typography>
             <Typography variant="body2" color="text.secondary">
               out of {possiblePoints} possible points

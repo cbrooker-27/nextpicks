@@ -15,9 +15,17 @@ const config = {
   testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/'],
   moduleNameMapper: {
     // Handle module aliases (this will be automatically configured for you soon)
-    '^@/components/(.*)$': '<rootDir>/components/$1',
+    '^@/(.*)$': '<rootDir>/$1',
   }
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-export default createJestConfig(config)
+export default async () => {
+  const nextConfig = await createJestConfig(config)();
+  
+  nextConfig.transformIgnorePatterns = [
+    '/node_modules/(?!(bson|mongodb|mongodb-connection-string-url|whatwg-url|tr46|webidl-conversions)/)'
+  ];
+
+  return nextConfig;
+}
