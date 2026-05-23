@@ -30,7 +30,13 @@ export async function getGamesForWeekFromMsf(week) {
     "/games.json";
   // console.log("msfURL:" + msfUrl);
   const headers = getMSFHeaders();
+  if (process.env.DEV_MODE === 'true') {
+    console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
+  }
   const response = await fetch(msfUrl, { method: "GET", headers: headers });
+  if (process.env.DEV_MODE === 'true') {
+    console.log(`[EXTERNAL_CALL] Return Code: ${response.status}`);
+  }
   const resJson = await response.json();
   const games = resJson.games;
   const teams = resJson.references.teamReferences;
@@ -61,7 +67,13 @@ export async function getTeamStatisticsFromMsf(week) {
   }-regular/standings.json?stats=W,L,T,PF,PA`;
   console.log("msfURL:" + msfUrl);
   const headers = getMSFHeaders();
+  if (process.env.DEV_MODE === 'true') {
+    console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
+  }
   const response = await fetch(msfUrl, { method: "GET", headers: headers });
+  if (process.env.DEV_MODE === 'true') {
+    console.log(`[EXTERNAL_CALL] Return Code: ${response.status}`);
+  }
   const resJson = await response.json();
   const teams = resJson.teams;
   const simpleTeams = teams.map((team) => {
