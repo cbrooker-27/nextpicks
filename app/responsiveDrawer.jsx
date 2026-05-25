@@ -28,6 +28,7 @@ import {
   TableChart,
   TaskAlt,
   Visibility,
+  QueryStats,
 } from "@mui/icons-material";
 
 const drawerWidth = 240;
@@ -72,6 +73,11 @@ export default function ResponsiveDrawer(props) {
           icon: EventRepeat,
           target: "/picks/previousWeeks",
           disabled: true,
+        },
+        {
+          itemname: "Analytics",
+          icon: QueryStats,
+          target: "/picks/analytics",
         },
       ],
     },
@@ -218,8 +224,10 @@ export default function ResponsiveDrawer(props) {
           open={mobileOpen}
           onTransitionEnd={handleDrawerTransitionEnd}
           onClose={handleDrawerClose}
-          ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
+          slotProps={{
+            root: {
+              keepMounted: true, // Better open performance on mobile.
+            },
           }}
           sx={{
             display: { xs: "block", sm: "none" },

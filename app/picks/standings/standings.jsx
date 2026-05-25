@@ -4,6 +4,7 @@ import { getCurrentWeek, getPickedGames, getThisYearsActiveUsers } from "@/app/u
 import { Chip, Avatar, Tooltip, Switch, FormControlLabel, Box } from "@mui/material";
 import { LineChart } from "@mui/x-charts";
 import { BarChart } from "@mui/x-charts/BarChart";
+import StandingsLineChart from "./StandingsLineChart";
 import { getUserStatsForStandings } from "@/app/serverActions/users";
 import ProfileModal from "@/app/components/profileModal";
 import { useEffect, useState } from "react";
@@ -50,6 +51,17 @@ export default function Standings() {
   // Filter out NPC users if toggle is off
   const filteredUserStats = includeNpc ? userStats : userStats.filter((user) => !user.npc);
 
+  // Transform filteredUserStats into cumulative series data for the line chart
+  const filteredLineGraphData = filteredUserStats.map((user) => {
+    const data = [];
+    let cumulative = 0;
+    for (let i = 1; i <= week.week - 1; i++) {
+      cumulative += Number(user[`week${i}`] || 0);
+      data.push(cumulative);
+    }
+    return { label: user.name, data };
+  });
+
   return (
     <>
       <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
@@ -89,6 +101,14 @@ export default function Standings() {
         ))}
       </div>
       <div style={{ marginTop: "50px", width: "100%" }}>
+        {/* Line chart: users are series, x axis is week, y axis is points */}
+        <StandingsLineChart
+          userStats={filteredUserStats}
+          seriesData={filteredLineGraphData}
+          maxWeek={week.week - 1}
+          maxSeries={20}
+        />
+
         <BarChart
           dataset={filteredUserStats}
           series={series}
@@ -99,16 +119,6 @@ export default function Standings() {
           borderRadius={10}
           margin={{ left: 0 }}
         />
-        {/* <LineChart
-          dataset={activeUsers}
-          series={series}
-          //xAxis={[{ width: 50 }]}
-          yAxis={[{ scaleType: "band", dataKey: "name", width: 70 }]}
-          layout={"horizontal"}
-          height={550}
-          borderRadius={10}
-          margin={{ left: 0 }}
-        /> */}
       </div>
       <ProfileModal open={modalOpen} onClose={handleCloseModal} user={selectedUser} />
     </>
