@@ -55,11 +55,12 @@ export default function Home() {
   if (!isLoading) {
     usersForThisSeason = users.filter((user) => user.activeSeasons?.includes("" + week.season));
     usersWhoPicked = usersForThisSeason.filter((user) =>
-      pickedGames.some((game) => game.userChoices.some((choice) => choice.userId === user.name))
+      pickedGames.some((game) => game.userChoices.some((choice) => choice.userId === user.name)),
     );
   }
 
   const pickedThisWeek = usersWhoPicked.some((user) => user.name === session?.user?.name);
+  console.log("session:", session);
 
   return isLoading ? (
     <Skeleton />
@@ -108,8 +109,8 @@ export default function Home() {
                         user.name === session?.user?.name
                           ? cssStyles.hilitedAvatar
                           : user.npc
-                          ? cssStyles.npcAvatar
-                          : cssStyles.avatar
+                            ? cssStyles.npcAvatar
+                            : cssStyles.avatar
                       }
                       key={user.name}
                       alt={user.name}
@@ -132,8 +133,8 @@ export default function Home() {
                       user.name === session?.user?.name
                         ? cssStyles.hilitedAvatar
                         : user.npc
-                        ? cssStyles.npcAvatar
-                        : cssStyles.avatar
+                          ? cssStyles.npcAvatar
+                          : cssStyles.avatar
                     }
                     key={user.name}
                     alt={user.name}
