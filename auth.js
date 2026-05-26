@@ -14,10 +14,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: MongoDBAdapter(client),
   callbacks: {
     async signIn(props) {
+      console.log("1", props);
       let user = props.user;
+      console.log("2", user);
       if (props.account.provider !== "credentials") {
+        console.log("3", "not credentials");
         user = await getUserFromDbWithEmail(props.user.email);
+        console.log("4", user);
         if (!user) {
+          console.log("5", "not found");
           return false;
         }
 
