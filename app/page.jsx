@@ -16,7 +16,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [week, setWeek] = useState(null);
   const [seasonData, setSeasonData] = useState([]);
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const [userStats, setUserStats] = useState([]);
 
   useEffect(() => {
@@ -61,6 +61,10 @@ export default function Home() {
 
   const pickedThisWeek = usersWhoPicked.some((user) => user.name === session?.user?.name);
   console.log("session:", session);
+  console.log("status:", status);
+  // if (status !== "authenticated") {
+  //   void update();
+  // }
 
   return isLoading ? (
     <Skeleton />
