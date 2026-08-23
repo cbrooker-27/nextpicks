@@ -5,13 +5,13 @@ export interface User {
   name: string;
   email: string;
   image?: string;
-  activeSeasons?: string[];
+  activeSeasons?: number[];
   npc?: boolean;
 }
 
 export interface Game {
   _id?: ObjectId | string;
-  season: string | number;
+  season: number;
   week: number;
   startTime: string | Date;
   awayFavorite: boolean;
@@ -33,5 +33,5 @@ export interface UserChoice {
 export interface WeekConfig {
   _id?: ObjectId | string;
   week: number;
-  season: string | number;
+  season: number;
 }

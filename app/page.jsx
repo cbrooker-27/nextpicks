@@ -53,7 +53,7 @@ export default function Home() {
   let usersWhoPicked = [];
   let usersForThisSeason = [];
   if (!isLoading) {
-    usersForThisSeason = users.filter((user) => user.activeSeasons?.includes("" + week.season));
+    usersForThisSeason = users.filter((user) => user.activeSeasons?.some((season) => Number(season) === week.season));
     usersWhoPicked = usersForThisSeason.filter((user) =>
       pickedGames.some((game) => game.userChoices.some((choice) => choice.userId === user.name)),
     );

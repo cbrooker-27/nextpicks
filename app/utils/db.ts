@@ -16,6 +16,11 @@ export const getAllUserFromDb = async (): Promise<string> => {
   const db: Db = client.db(process.env.MONGODB_DB || "picks");
   const users = await db.collection<User>("users").find().toArray();
   await client.close();
+  users.forEach((user) => {
+    if (user.activeSeasons) {
+      user.activeSeasons = user.activeSeasons.map((season) => Number(season));
+    }
+  });
   return JSON.stringify(users);
 };
 export const getUserFromDbWithEmail = async (emailAddress: string): Promise<WithId<User> | null> => {
@@ -27,7 +32,8 @@ export const getUserFromDbWithEmail = async (emailAddress: string): Promise<With
 };
 export const getThisYearsActiveUsers = async (): Promise<string> => {
   const users: User[] = JSON.parse(await getAllUserFromDb());
-  return JSON.stringify(users.filter((user) => user.activeSeasons?.includes("2026")));
+  const currentWeek = await getCurrentWeek();
+  return JSON.stringify(users.filter((user) => user.activeSeasons?.some((season) => Number(season) === currentWeek.season)));
 };
 
 export const updateUser = async (user: User) => {
@@ -39,16 +45,18 @@ export const updateUser = async (user: User) => {
   return updatedUser;
 };
 
-export const getCurrentWeek = async (): Promise<{ week: number; season: string | number }> => {
+export const getCurrentWeek = async (): Promise<{ week: number; season: number }> => {
   const client = await connectToDatabase();
   const db: Db = client.db(process.env.MONGODB_DB || "picks");
   const week = await db.collection<WeekConfig>("currentWeek").findOne();
   console.log(week);
   await client.close();
-  return { week: week!.week, season: week!.season };
+  return { week: week!.week, season: Number(week!.season) };
 };
 
-export const updateCurrentWeek = async (newWeek: number) => {
+export const updateCurrentWeek = async (newWeekOrConfig: number | WeekConfig) => {
+  const newWeek = typeof newWeekOrConfig === "number" ? newWeekOrConfig : newWeekOrConfig.week;
+  const newSeason = typeof newWeekOrConfig === "number" ? undefined : Number(newWeekOrConfig.season);
   const lastWeeksPicks: Game[] = JSON.parse(await getThisWeeksPickedGames());
   const client = await connectToDatabase();
   const db: Db = client.db(process.env.MONGODB_DB || "picks");
@@ -82,7 +90,10 @@ export const updateCurrentWeek = async (newWeek: number) => {
     })
   );
 
-  const updatedWeek = await db.collection("currentWeek").updateOne({}, { $set: { week: newWeek } });
+  const updatedWeek = await db.collection("currentWeek").updateOne(
+    {},
+    { $set: newSeason === undefined ? { week: newWeek } : { week: newWeek, season: newSeason } }
+  );
   console.log("updated week: " + updatedWeek);
   await client.close();
   return updatedWeek;
@@ -96,7 +107,7 @@ export const updateGameInDb = async (game: Game) => {
   return updatedGame;
 };
 
-export const getAllGames = async (season: string | number): Promise<WithId<Game>[]> => {
+export const getAllGames = async (season: number): Promise<WithId<Game>[]> => {
   const client = await connectToDatabase();
   const db: Db = client.db(process.env.MONGODB_DB || "picks");
   const findResult = db.collection<Game>("games").find({ season: season });
@@ -215,7 +226,7 @@ export async function addUserChoices(choices: UserChoice[]) {
   return JSON.stringify(insertResult);
 }
 
-export async function getPickableGames(week: { week: number; season: string | number }): Promise<WithId<Game>[]> {
+export async function getPickableGames(week: { week: number; season: number }): Promise<WithId<Game>[]> {
   const client = await connectToDatabase();
   const db: Db = client.db(process.env.MONGODB_DB || "picks");
   const findResult = db.collection<Game>("games").find({ week: week.week, season: week.season });
@@ -226,7 +237,7 @@ export async function getPickableGames(week: { week: number; season: string | nu
   return games;
 }
 
-export async function getSpreadCounts(season?: string | number) {
+export async function getSpreadCounts(season?: number) {
   const client = await connectToDatabase();
   const db: Db = client.db(process.env.MONGODB_DB || "picks");
 
@@ -250,7 +261,7 @@ export async function getSpreadCounts(season?: string | number) {
   return result;
 }
 
-export async function getSpreadOutcomeCounts(season?: string | number) {
+export async function getSpreadOutcomeCounts(season?: number) {
   const client = await connectToDatabase();
   const db: Db = client.db(process.env.MONGODB_DB || "picks");
 
@@ -321,7 +332,7 @@ export async function getAllUserChoices(): Promise<WithId<UserChoice>[]> {
   return userChoices;
 }
 
-export async function getAllPickedGames(season: string | number): Promise<string> {
+export async function getAllPickedGames(season: number): Promise<string> {
   const games = await getAllGames(season);
   const allUserChoices = await getAllUserChoices();
   const pickedGames = games.map((game) => {
@@ -331,7 +342,7 @@ export async function getAllPickedGames(season: string | number): Promise<string
   return JSON.stringify(pickedGames);
 }
 
-export async function getPickedGames(week: { week: number; season: string | number }): Promise<string> {
+export async function getPickedGames(week: { week: number; season: number }): Promise<string> {
   const games = await getPickableGames(week);
   const allUserChoices = await getAllUserChoices();
 

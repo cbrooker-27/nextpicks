@@ -1,10 +1,10 @@
 import { getGamesForWeekFromMsf } from "@/app/lib/msf";
 import { getPickedGames, getThisYearsActiveUsers, getAllPickedGames } from "@/app/utils/db";
 
-export async function getUserStatsForStandings(week,includeCurrentWeek) {
+export async function getUserStatsForStandings(week: { week: number; season: number; },includeCurrentWeek: boolean) {
   const activeUsers = JSON.parse(await getThisYearsActiveUsers());
 
-  activeUsers.forEach((user) => {
+  activeUsers.forEach((user: { totalPoints: number; points: number[]; }) => {
     user.totalPoints = 0;
     user.points = [];
     user.points[0] = 0;
@@ -17,16 +17,16 @@ export async function getUserStatsForStandings(week,includeCurrentWeek) {
     //const pickedGames = JSON.parse(await getPickedGames({ week: i, season: week.season }));
     if (includeCurrentWeek && i === week.week) {
         //this means we can run into live scores, we don't have thosein our db, so get them from msf
-        gamesWithScores = await getGamesForWeekFromMsf({ week: "" + i, season: "" + week.season });
+        gamesWithScores = await getGamesForWeekFromMsf({ week: i, season: week.season });
     }
 
-    activeUsers.forEach((user) => {
+    activeUsers.forEach((user: { [x: string]: number; }) => {
       user["week" + i] = 0;
       user["weekLive" + i] = 0;
       user["possiblePoints" + i] = 0;
     });
 
-    allPickedGames.filter((game) => game.week === i).map((game) => {
+    allPickedGames.filter((game: { week: number; }) => game.week === i).map((game: { _id: any; awayScore: any; homeScore: any; playedStatus: string; awayFavorite: any; spread: number; userChoices: any[]; }) => {
         if (includeCurrentWeek && i === week.week) {
             const gameData = gamesWithScores.find((g) => g._id === game._id);
             game.awayScore = gameData.awayScore;
@@ -53,8 +53,8 @@ export async function getUserStatsForStandings(week,includeCurrentWeek) {
         gamePoints["uf"] = 1;
         gamePoints["uu"] = 2;
       }
-      activeUsers.forEach((user) => {
-        const userChoice = game.userChoices.find((choice) => choice.userId === user.name);
+      activeUsers.forEach((user: { [x: string]: any; name: any; totalPoints: any; }) => {
+        const userChoice = game.userChoices.find((choice: { userId: any; }) => choice.userId === user.name);
 
         if (game.playedStatus.startsWith("COMPLETED")) {
           user["week" + i] += gamePoints[userChoice?.choice] || 0;
@@ -67,6 +67,6 @@ export async function getUserStatsForStandings(week,includeCurrentWeek) {
       });
     });
   }
-  activeUsers.sort((a, b) => b.totalPoints - a.totalPoints);
+  activeUsers.sort((a: { totalPoints: number; }, b: { totalPoints: number; }) => b.totalPoints - a.totalPoints);
   return activeUsers;
 }

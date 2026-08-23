@@ -22,7 +22,7 @@ export async function getGamesForWeekFromMsf(week) {
     process.env.MYSPORTSFEED_BASE_URL +
     week.season +
     "-" +
-    (parseInt(week.season) + 1) +
+    (week.season + 1) +
     "-regular" +
     // "current" + doesn't work in the offseason
     "/week/" +
@@ -37,28 +37,33 @@ export async function getGamesForWeekFromMsf(week) {
   if (process.env.DEV_MODE === "true") {
     console.log(`[EXTERNAL_CALL] Return Code: ${response.status}`);
   }
-  const resJson = await response.json();
-  const games = resJson.games;
-  const teams = resJson.references.teamReferences;
-  const simpleGames = games.map((game) => {
-    // console.log(game);
-    return {
-      _id: game.schedule.id,
-      week: game.schedule.week,
-      startTime: game.schedule.startTime,
-      away: teams.find(findTeam, game.schedule.awayTeam.abbreviation),
-      home: teams.find(findTeam, game.schedule.homeTeam.abbreviation),
-      location: game.schedule.venue.name,
-      homeScore: game.score.homeScoreTotal,
-      awayScore: game.score.awayScoreTotal,
-      playedStatus: game.schedule.playedStatus,
-      currentQuarter: game.score.currentQuarter,
-      timeRemaining: game.score.currentQuarterSecondsRemaining,
-      intermission: game.score.currentIntermission,
-    };
-  });
-  simpleGames.sort((a, b) => a._id - b._id);
-  return simpleGames;
+  try {
+    const resJson = await response.json();
+    const games = resJson.games;
+    const teams = resJson.references.teamReferences;
+    const simpleGames = games.map((game) => {
+      // console.log(game);
+      return {
+        _id: game.schedule.id,
+        week: game.schedule.week,
+        startTime: game.schedule.startTime,
+        away: teams.find(findTeam, game.schedule.awayTeam.abbreviation),
+        home: teams.find(findTeam, game.schedule.homeTeam.abbreviation),
+        location: game.schedule.venue.name,
+        homeScore: game.score.homeScoreTotal,
+        awayScore: game.score.awayScoreTotal,
+        playedStatus: game.schedule.playedStatus,
+        currentQuarter: game.score.currentQuarter,
+        timeRemaining: game.score.currentQuarterSecondsRemaining,
+        intermission: game.score.currentIntermission,
+      };
+    });
+    simpleGames.sort((a, b) => a._id - b._id);
+    return simpleGames;
+  } catch (error) {
+    console.error("Error fetching games from MSF:", error);
+    return [];
+  }
 }
 
 export async function getTeamStatisticsFromMsf(week) {

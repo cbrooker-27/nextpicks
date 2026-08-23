@@ -15,7 +15,7 @@ import {
   CardActionArea,
 } from "@mui/material";
 import { Search, SmartToy } from "@mui/icons-material";
-import { getAllUserFromDb } from "@/app/utils/db";
+import { getAllUserFromDb, getCurrentWeek } from "@/app/utils/db";
 import { useSession } from "next-auth/react";
 import ProfileModal from "@/app/components/profileModal";
 
@@ -25,6 +25,7 @@ export default function ProfilesList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [currentSeason, setCurrentSeason] = useState(null);
   const { data: session } = useSession();
 
   useEffect(() => {
@@ -33,6 +34,8 @@ export default function ProfilesList() {
         const usersData = await getAllUserFromDb();
         const parsedUsers = JSON.parse(usersData);
         setUsers(parsedUsers);
+        const currentWeek = await getCurrentWeek();
+        setCurrentSeason(currentWeek.season);
       } catch (error) {
         console.error("Error fetching users:", error);
       } finally {
@@ -44,7 +47,7 @@ export default function ProfilesList() {
 
   // Filter users based on search query and active status
   const filteredUsers = users.filter((user) => {
-    const isActive = user.activeSeasons?.includes("2026");
+    const isActive = user.activeSeasons?.some((season) => Number(season) === currentSeason);
     const matchesSearch = user.name?.toLowerCase().includes(searchQuery.toLowerCase());
     return isActive && matchesSearch;
   });
