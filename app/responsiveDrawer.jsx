@@ -104,6 +104,11 @@ export default function ResponsiveDrawer(props) {
           icon: Add,
           target: "/picks/addGames",
         },
+        {
+          itemname: "Active Seasons",
+          icon: People,
+          target: "/admin/activeSeasons",
+        },
       ],
     },
     {
@@ -224,10 +229,8 @@ export default function ResponsiveDrawer(props) {
           open={mobileOpen}
           onTransitionEnd={handleDrawerTransitionEnd}
           onClose={handleDrawerClose}
-          slotProps={{
-            root: {
-              keepMounted: true, // Better open performance on mobile.
-            },
+          ModalProps={{
+            keepMounted: true, // Better open performance on mobile.
           }}
           sx={{
             display: { xs: "block", sm: "none" },

@@ -17,6 +17,7 @@ To make this repository easy for developers and AI agents to navigate, follow th
 - **Database Access**: Core data fetching and mutation functions reside in `app/utils/db.ts` or `app/serverActions/`. Use `app/serverActions` for Next.js actions directly invoked by client components.
 - **Types**: We are migrating core models (Game, User, Choice) to TypeScript to ensure strict schema adherence. Core types are defined in `types/index.ts`.
 - **Environment Variables**: Create a `.env.local` file by copying `.env.example`.
+- **Admin access**: Set `ADMIN_EMAILS` to a comma-separated list of email addresses allowed to manage active seasons.
 
 ## Getting Started
 

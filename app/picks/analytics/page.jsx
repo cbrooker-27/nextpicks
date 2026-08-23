@@ -1,30 +1,61 @@
 "use client";
-import { getSpreadOutcomeCounts } from "../../utils/db.ts";
-import SpreadGrid from "./SpreadGrid";
-import SpreadChart from "./SpreadChart";
+import { getTeamStats } from "./actions";
+import { getOutcomeStats } from "./actions";
+import { getSpreadStats } from "./actions";
+import TeamChart from "./components/TeamChart";
+import OutcomeChart from "./components/OutcomeChart";
+import SpreadChart from "./components/SpreadChart";
 import { useState, useEffect } from "react";
+import { Button, Box, Typography, Alert } from "@mui/material";
 
 export default function Page() {
-  const [stats, setStats] = useState([]);
-  const [season, setSeason] = useState(2025);
-  const total = stats.reduce((s, c) => s + (c.total || 0), 0);
+  const [teamData, setTeamData] = useState([]);
+  const [outcomeData, setOutcomeData] = useState([]);
+  const [spreadData, setSpreadData] = useState([]);
+  const [mode, setMode] = useState("summarized"); // 'summarized' or 'individual'
+  const [error, setError] = useState(null);
+
   useEffect(() => {
-    getSpreadOutcomeCounts(season).then((stats) => setStats(stats));
-  }, [season]);
+    // Load all stats concurrently
+    Promise.all([
+      getTeamStats().catch((e) => {
+        setError(e.message);
+        return [];
+      }),
+      getOutcomeStats().catch((e) => {
+        setError(e.message);
+        return [];
+      }),
+      getSpreadStats(mode).catch((e) => {
+        setError(e.message);
+        return [];
+      }),
+    ]).then(([team, outcome, spread]) => {
+      setTeamData(team);
+      setOutcomeData(outcome);
+      setSpreadData(spread);
+    });
+  }, [mode]);
+
+  if (error) {
+    return <Alert severity="error">{error}</Alert>;
+  }
 
   return (
-    <div>
-      <h1>Analytics</h1>
-      {season ? <p>Season: {season}</p> : null}
-      <p>Total completed games used in analysis: {total}</p>
-      {stats.length === 0 ? (
-        <p>No completed loaded yet.</p>
-      ) : (
-        <div style={{ marginTop: 8 }}>
-          <SpreadChart stats={stats} />
-          <SpreadGrid stats={stats} />
-        </div>
-      )}
-    </div>
+    <Box sx={{ p: 2, background: "rgba(0,0,0,0.04)", borderRadius: 2 }}>
+      <Typography variant="h4" sx={{ mb: 2 }}>
+        Analytics
+      </Typography>
+      <Button
+        variant="contained"
+        onClick={() => setMode(mode === "summarized" ? "individual" : "summarized")}
+        sx={{ mb: 2 }}
+      >
+        Switch to {mode === "summarized" ? "Raw" : "Bucket"} View
+      </Button>
+      <TeamChart data={teamData} />
+      <OutcomeChart data={outcomeData} />
+      <SpreadChart data={spreadData} mode={mode} />
+    </Box>
   );
 }

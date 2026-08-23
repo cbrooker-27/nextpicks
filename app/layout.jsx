@@ -1,5 +1,6 @@
 import ResponsiveDrawer from "./responsiveDrawer";
 import { SessionProvider } from "next-auth/react";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 
 export const metadata = {
   title: "ChrisBrooker.com",
@@ -16,12 +17,14 @@ export default function Layout({ children }) {
   return (
     <html lang="en">
       <body>
-        <SessionProvider>
-          <ResponsiveDrawer>
-            {children}
-            <div id="notifications"></div>
-          </ResponsiveDrawer>
-        </SessionProvider>
+        <AppRouterCacheProvider>
+          <SessionProvider>
+            <ResponsiveDrawer>
+              {children}
+              <div id="notifications"></div>
+            </ResponsiveDrawer>
+          </SessionProvider>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );
