@@ -51,17 +51,6 @@ export default function Standings() {
   // Filter out NPC users if toggle is off
   const filteredUserStats = includeNpc ? userStats : userStats.filter((user) => !user.npc);
 
-  // Transform filteredUserStats into cumulative series data for the line chart
-  const filteredLineGraphData = filteredUserStats.map((user) => {
-    const data = [];
-    let cumulative = 0;
-    for (let i = 1; i <= week.week - 1; i++) {
-      cumulative += Number(user[`week${i}`] || 0);
-      data.push(cumulative);
-    }
-    return { label: user.name, data };
-  });
-
   return (
     <>
       <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
@@ -102,12 +91,7 @@ export default function Standings() {
       </div>
       <div style={{ marginTop: "50px", width: "100%" }}>
         {/* Line chart: users are series, x axis is week, y axis is points */}
-        <StandingsLineChart
-          userStats={filteredUserStats}
-          seriesData={filteredLineGraphData}
-          maxWeek={week.week - 1}
-          maxSeries={20}
-        />
+        <StandingsLineChart userStats={filteredUserStats} maxWeek={week.week - 1} maxSeries={10} />
 
         <BarChart
           dataset={filteredUserStats}

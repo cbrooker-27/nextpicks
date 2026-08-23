@@ -27,7 +27,7 @@ export const getUserFromDbWithEmail = async (emailAddress: string): Promise<With
 };
 export const getThisYearsActiveUsers = async (): Promise<string> => {
   const users: User[] = JSON.parse(await getAllUserFromDb());
-  return JSON.stringify(users.filter((user) => user.activeSeasons?.includes("2025")));
+  return JSON.stringify(users.filter((user) => user.activeSeasons?.includes("2026")));
 };
 
 export const updateUser = async (user: User) => {
@@ -312,7 +312,7 @@ export async function getThisWeeksPickedGames(): Promise<string> {
   return await getPickedGames(week);
 }
 
-async function getAllUserChoices(): Promise<WithId<UserChoice>[]> {
+export async function getAllUserChoices(): Promise<WithId<UserChoice>[]> {
   const client = await connectToDatabase();
   const db: Db = client.db(process.env.MONGODB_DB || "picks");
   const findResult = db.collection<UserChoice>("userChoices").find();

@@ -22,7 +22,7 @@ export async function getGamesForWeekFromMsf(week) {
     process.env.MYSPORTSFEED_BASE_URL +
     week.season +
     "-" +
-    (week.season + 1) +
+    (parseInt(week.season) + 1) +
     "-regular" +
     // "current" + doesn't work in the offseason
     "/week/" +
@@ -30,11 +30,11 @@ export async function getGamesForWeekFromMsf(week) {
     "/games.json";
   // console.log("msfURL:" + msfUrl);
   const headers = getMSFHeaders();
-  if (process.env.DEV_MODE === 'true') {
+  if (process.env.DEV_MODE === "true") {
     console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
   }
   const response = await fetch(msfUrl, { method: "GET", headers: headers });
-  if (process.env.DEV_MODE === 'true') {
+  if (process.env.DEV_MODE === "true") {
     console.log(`[EXTERNAL_CALL] Return Code: ${response.status}`);
   }
   const resJson = await response.json();
@@ -67,11 +67,11 @@ export async function getTeamStatisticsFromMsf(week) {
   }-regular/standings.json?stats=W,L,T,PF,PA`;
   console.log("msfURL:" + msfUrl);
   const headers = getMSFHeaders();
-  if (process.env.DEV_MODE === 'true') {
+  if (process.env.DEV_MODE === "true") {
     console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
   }
   const response = await fetch(msfUrl, { method: "GET", headers: headers });
-  if (process.env.DEV_MODE === 'true') {
+  if (process.env.DEV_MODE === "true") {
     console.log(`[EXTERNAL_CALL] Return Code: ${response.status}`);
   }
   const resJson = await response.json();

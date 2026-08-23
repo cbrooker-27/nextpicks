@@ -44,7 +44,7 @@ export default function ProfilesList() {
 
   // Filter users based on search query and active status
   const filteredUsers = users.filter((user) => {
-    const isActive = user.activeSeasons?.includes("2025");
+    const isActive = user.activeSeasons?.includes("2026");
     const matchesSearch = user.name?.toLowerCase().includes(searchQuery.toLowerCase());
     return isActive && matchesSearch;
   });
