@@ -116,7 +116,7 @@ export async function getSpreadStats(
   // Sort keys – natural order for summarized buckets, numeric for individual
   const sorted = Array.from(bucketMap.entries()).sort(([a], [b]) => {
     if (mode === 'individual') return Number(a) - Number(b);
-    const order = DEFAULT_BUCKETS.map((b) => b.label);
+    const order: string[] = DEFAULT_BUCKETS.map((b) => b.label);
     return order.indexOf(a) - order.indexOf(b);
   });
 

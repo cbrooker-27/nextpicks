@@ -38,8 +38,8 @@ export default function Home() {
       const stats = await getUserStatsForStandings(week, true);
       setUserStats(stats);
     }
-    if (week) void fetchUserStats();
-  }, [week]);
+    if (week?.week > 1 && pickedGames.length > 0) void fetchUserStats();
+  }, [week, pickedGames]);
 
   useEffect(() => {
     async function getSeasonData() {
@@ -60,6 +60,8 @@ export default function Home() {
   }
 
   const pickedThisWeek = usersWhoPicked.some((user) => user.name === session?.user?.name);
+  const hasGamesToSelect = pickedGames.length > 0;
+  const standingsStats = week?.week === 1 ? [] : userStats;
   console.log("session:", session);
   console.log("status:", status);
   // if (status !== "authenticated") {
@@ -78,7 +80,13 @@ export default function Home() {
           gap: 2,
         }}
       >
-        {session && (
+        {!hasGamesToSelect ? (
+          <Card>
+            <CardContent>
+              <h1>No games to select</h1>
+            </CardContent>
+          </Card>
+        ) : session ? (
           <>
             <WeeklyScoreCard
               userName={session?.user?.name}
@@ -87,68 +95,74 @@ export default function Home() {
               currentWeek
               pickedThisWeek={pickedThisWeek}
             />
-            <WeeklyScoreCard
-              userName={session?.user?.name}
-              week={{ ...week, week: week.week - 1 }}
-              userStats={userStats}
-            />
-            {/* Top 3 users from last week */}
-            <TopThreeWidget userStats={userStats} week={week} />
-            {/* Year leader board */}
-            <LeaderBoard userStats={userStats} />
+            {week.week > 1 && (
+              <>
+                <WeeklyScoreCard
+                  userName={session?.user?.name}
+                  week={{ ...week, week: week.week - 1 }}
+                  userStats={standingsStats}
+                />
+                <TopThreeWidget userStats={standingsStats} week={week} />
+                <LeaderBoard userStats={standingsStats} />
+              </>
+            )}
+          </>
+        ) : null}
+        {hasGamesToSelect && (
+          <>
+            <Card>
+              <CardContent>
+                <h1>Slackers</h1>
+                <p>Users who did not pick yet this week:</p>
+                <AvatarGroup max={30} className={cssStyles.avatarGroup}>
+                  {usersForThisSeason
+                    .filter((user) => !usersWhoPicked.includes(user))
+                    .filter((user) => user.npc !== true)
+                    .map((user) => (
+                      <Tooltip key={user.name} title={user.name} arrow>
+                        <Avatar
+                          className={
+                            user.name === session?.user?.name
+                              ? cssStyles.hilitedAvatar
+                              : user.npc
+                                ? cssStyles.npcAvatar
+                                : cssStyles.avatar
+                          }
+                          key={user.name}
+                          alt={user.name}
+                          src={user?.image}
+                        ></Avatar>
+                      </Tooltip>
+                    ))}
+                </AvatarGroup>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent>
+                <h1>Over-Achievers</h1>
+                <p>Users who picked games this week:</p>
+                <AvatarGroup max={30} className={cssStyles.avatarGroup}>
+                  {usersWhoPicked.map((user) => (
+                    <Tooltip key={user.name} title={user.name} arrow>
+                      <Avatar
+                        className={
+                          user.name === session?.user?.name
+                            ? cssStyles.hilitedAvatar
+                            : user.npc
+                              ? cssStyles.npcAvatar
+                              : cssStyles.avatar
+                        }
+                        key={user.name}
+                        alt={user.name}
+                        src={user?.image}
+                      ></Avatar>
+                    </Tooltip>
+                  ))}
+                </AvatarGroup>
+              </CardContent>
+            </Card>
           </>
         )}
-        <Card>
-          <CardContent>
-            <h1>Slackers</h1>
-            <p>Users who did not pick yet this week:</p>
-            <AvatarGroup max={30} className={cssStyles.avatarGroup}>
-              {usersForThisSeason
-                .filter((user) => !usersWhoPicked.includes(user))
-                .filter((user) => user.npc !== true)
-                .map((user) => (
-                  <Tooltip key={user.name} title={user.name} arrow>
-                    <Avatar
-                      className={
-                        user.name === session?.user?.name
-                          ? cssStyles.hilitedAvatar
-                          : user.npc
-                            ? cssStyles.npcAvatar
-                            : cssStyles.avatar
-                      }
-                      key={user.name}
-                      alt={user.name}
-                      src={user?.image}
-                    ></Avatar>
-                  </Tooltip>
-                ))}
-            </AvatarGroup>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <h1>Over-Achievers</h1>
-            <p>Users who picked games this week:</p>
-            <AvatarGroup max={30} className={cssStyles.avatarGroup}>
-              {usersWhoPicked.map((user) => (
-                <Tooltip key={user.name} title={user.name} arrow>
-                  <Avatar
-                    className={
-                      user.name === session?.user?.name
-                        ? cssStyles.hilitedAvatar
-                        : user.npc
-                          ? cssStyles.npcAvatar
-                          : cssStyles.avatar
-                    }
-                    key={user.name}
-                    alt={user.name}
-                    src={user?.image}
-                  ></Avatar>
-                </Tooltip>
-              ))}
-            </AvatarGroup>
-          </CardContent>
-        </Card>
       </Box>
     </SeasonStatisticsProvider>
   );
