@@ -13,7 +13,6 @@ export default function MakePicks() {
   const [games, setGames] = useState([]);
   const [teamDetails, setTeamDetails] = useState(null);
   const [seasonData, setSeasonData] = useState(null);
-  const [alreadyPicked, setAlreadyPicked] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Redirect to sign in if not authenticated
@@ -28,19 +27,16 @@ export default function MakePicks() {
       const thisWeeksPicksString = await getThisWeeksPickedGames();
       if (thisWeeksPicksString) {
         const thisWeeksPicks = JSON.parse(thisWeeksPicksString);
-        if (thisWeeksPicks.some((pick) => pick.userChoices.some((choice) => choice.userId === session.user.name))) {
-          setAlreadyPicked(true);
-          setLoading(false);
-          return;
-        }
+        thisWeeksPicks.forEach((game) => {
+          game.userChoice = game.userChoices?.find((choice) => choice.userId === session.user.name)?.choice;
+        });
+        setGames(thisWeeksPicks);
       }
       const td = await getTeamStatisticsFromMsf(w);
       const sd = await getAllGames(w.season);
-      const pickable = await getPickableGames(w);
       // setWeek(w);
       setTeamDetails(td);
       setSeasonData(sd);
-      setGames(pickable);
       setLoading(false);
     }
     loadData();
@@ -48,10 +44,6 @@ export default function MakePicks() {
 
   if (status === "loading" || loading) {
     return <p>Loading...</p>;
-  }
-
-  if (alreadyPicked) {
-    return <div>You have already made your picks for this week.</div>;
   }
 
   return games.length > 0 ? (

@@ -59,7 +59,10 @@ export default function Home() {
     );
   }
 
-  const pickedThisWeek = usersWhoPicked.some((user) => user.name === session?.user?.name);
+  const selectableGames = pickedGames.filter((game) => new Date(game.startTime) > new Date());
+  const hasUnpickedGames = selectableGames.some(
+    (game) => !game.userChoices.some((choice) => choice.userId === session?.user?.name),
+  );
   const hasGamesToSelect = pickedGames.length > 0;
   const standingsStats = week?.week === 1 ? [] : userStats;
   console.log("session:", session);
@@ -93,7 +96,8 @@ export default function Home() {
               week={week}
               userStats={userStats}
               currentWeek
-              pickedThisWeek={pickedThisWeek}
+              pickedThisWeek={!hasUnpickedGames}
+              hasUnpickedGames={hasUnpickedGames}
             />
             {
               /* Last week's scorecard */

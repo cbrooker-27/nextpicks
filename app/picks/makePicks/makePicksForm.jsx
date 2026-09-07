@@ -14,8 +14,12 @@ import { useState } from "react";
 // then send them to view picks
 
 export default function MakePicksForm(props) {
-  const [games, setGames] = useState(structuredClone(props.games));
-  const [readyToSubmit, setReadyToSubmit] = useState(false);
+  const [games, setGames] = useState(
+    structuredClone(props.games).map((game) => ({ ...game, userChoice: game.userChoice })),
+  );
+  const [readyToSubmit, setReadyToSubmit] = useState(() =>
+    props.games.every((game) => new Date(game.startTime) <= new Date() || game.userChoice),
+  );
   const [submitting, setSubmitting] = useState(false);
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -34,16 +38,17 @@ export default function MakePicksForm(props) {
     updatedGames[index].userChoice = choice;
     setGames(updatedGames);
 
-    const anyEmptyChoices = updatedGames.some((game, i) => !game.userChoice);
-    setReadyToSubmit(!anyEmptyChoices);
+    setReadyToSubmit(updatedGames.every((game) => new Date(game.startTime) <= new Date() || game.userChoice));
   }
 
   async function submitClicked(event) {
     event.preventDefault();
+    if (!games.every((game) => new Date(game.startTime) <= new Date() || game.userChoice)) return;
     const selectionTime = new Date().toISOString();
     setSubmitting(true);
     const choices = [];
     games.forEach((game) => {
+      if (!game.userChoice || new Date(game.startTime) <= new Date()) return;
       choices.push({
         gameId: game._id,
         userId: session.user.name,
@@ -51,7 +56,7 @@ export default function MakePicksForm(props) {
         selectionTime: selectionTime,
       });
     });
-    const result = await addUserChoices(choices);
+    await addUserChoices(choices);
     setSubmitting(false);
     setReadyToSubmit(false);
     router.push("/picks/view");
@@ -96,6 +101,7 @@ export default function MakePicksForm(props) {
           index={index}
           choiceChanged={choiceChanged}
           teamDetails={props.teamDetails}
+          initialChoice={game.userChoice}
         />
       ))}
     </div>

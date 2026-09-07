@@ -4,10 +4,14 @@ import { useState } from "react";
 import Image from "next/image";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import { FormControlLabel, Switch } from "@mui/material";
+import { Button, FormControlLabel, Switch } from "@mui/material";
+import LockIcon from "@mui/icons-material/Lock";
+import EditIcon from "@mui/icons-material/Edit";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
-export default function PickableGameTile({ game, index, choiceChanged, teamDetails }) {
-  const [choice, setChoice] = useState("");
+export default function PickableGameTile({ game, index, choiceChanged, teamDetails, initialChoice }) {
+  const [choice, setChoice] = useState(initialChoice || "");
+  const [editing, setEditing] = useState(!initialChoice);
   const [checked, setChecked] = useState(false);
   const favorite = structuredClone(game.awayFavorite ? game.away : game.home);
   const underdog = structuredClone(game.awayFavorite ? game.home : game.away);
@@ -34,13 +38,27 @@ export default function PickableGameTile({ game, index, choiceChanged, teamDetai
     };
   }
   const startTime = new Date(game.startTime);
+  const gameStarted = startTime <= new Date();
+  const pickLocked = gameStarted || (Boolean(initialChoice) && !editing);
   const handleChange = (event, newChoice) => {
+    if (pickLocked) return;
     setChoice(newChoice);
     choiceChanged(index, newChoice);
   };
 
   return (
-    <div className={cssStyles.gametile}>
+    <div className={`${cssStyles.gametile} ${gameStarted ? cssStyles.locked : ""}`}>
+      {(gameStarted || (initialChoice && !editing)) && (
+        <div className={cssStyles.lockBanner}>
+          {gameStarted ? <LockIcon fontSize="small" /> : <CheckCircleIcon fontSize="small" />}
+          {gameStarted ? "Game started - pick locked" : "Submitted"}
+          {!gameStarted && (
+            <Button color="inherit" size="small" startIcon={<EditIcon />} onClick={() => setEditing(true)}>
+              Edit pick
+            </Button>
+          )}
+        </div>
+      )}
       <div className={cssStyles.gamemain}>
         <div className={cssStyles.gameteam}>
           <TeamTile team={favorite} home={!game.awayFavorite} showDetails={checked} />
@@ -74,6 +92,7 @@ export default function PickableGameTile({ game, index, choiceChanged, teamDetai
         exclusive
         onChange={handleChange}
         className={cssStyles.choices}
+        disabled={pickLocked}
       >
         <ToggleButton value="ff" aria-label="ff" style={ffStyle} className={cssStyles.choice}>
           <Image alt="" src={`${favorite.officialLogoImageSrc}`} height="25" width="25" />

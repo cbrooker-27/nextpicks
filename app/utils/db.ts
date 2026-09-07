@@ -220,10 +220,36 @@ async function npcChoices(game: Game, db: Db) {
 export async function addUserChoices(choices: UserChoice[]) {
   const client = await connectToDatabase();
   const db: Db = client.db(process.env.MONGODB_DB || "picks");
-  const insertResult = await db.collection<UserChoice>("userChoices").insertMany(choices);
+  const gameIds = choices.map((choice) => choice.gameId);
+  const games = await db
+    .collection<Game>("games")
+    .find({ _id: { $in: gameIds as any[] } })
+    .project({ _id: 1, startTime: 1 })
+    .toArray();
+  const gamesById = new Map(games.map((game) => [String(game._id), game]));
+
+  for (const choice of choices) {
+    const game = gamesById.get(String(choice.gameId));
+    if (!game) {
+      await client.close();
+      throw new Error(`Game ${choice.gameId} was not found.`);
+    }
+    if (new Date(game.startTime).getTime() <= Date.now()) {
+      await client.close();
+      throw new Error(`Game ${choice.gameId} has already started.`);
+    }
+  }
+
+  const operations = choices.map((choice) => ({
+    updateOne: {
+      filter: { gameId: choice.gameId, userId: choice.userId },
+      update: { $set: { choice: choice.choice, selectionTime: choice.selectionTime } },
+      upsert: true,
+    },
+  }));
+  const writeResult = await db.collection<UserChoice>("userChoices").bulkWrite(operations);
   await client.close();
-  console.log("Inserted choices: ", insertResult);
-  return JSON.stringify(insertResult);
+  return JSON.stringify(writeResult);
 }
 
 export async function getPickableGames(week: { week: number; season: number }): Promise<WithId<Game>[]> {

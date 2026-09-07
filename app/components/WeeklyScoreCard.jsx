@@ -12,10 +12,18 @@ import { useRouter } from "next/navigation";
  * - userName: string (user id/name to look up picks)
  * - week: object (week info, e.g. { week: number, season: number })
  * - userStats: array (precomputed user stats for efficiency)
- * - pickedThisWeek: boolean (whether the user has picked this week)
+ * - pickedThisWeek: boolean (whether the user has picked all selectable games this week)
+ * - hasUnpickedGames: boolean (whether selectable games remain without a pick)
  * - currentWeek: boolean (whether this is the current week)
  */
-export default function WeeklyScoreCard({ userName, week, userStats, pickedThisWeek = false, currentWeek = false }) {
+export default function WeeklyScoreCard({
+  userName,
+  week,
+  userStats,
+  pickedThisWeek = false,
+  hasUnpickedGames = false,
+  currentWeek = false,
+}) {
   const router = useRouter();
   const seasonStatistics = useSeasonStatistics();
   const { points, possiblePoints, leader, positionDisplay, positionNumber, medalEmoji, isLive } = useMemo(() => {
@@ -42,7 +50,7 @@ export default function WeeklyScoreCard({ userName, week, userStats, pickedThisW
     const seasonData = seasonStatistics?.seasonData || [];
     const gamesForWeek = seasonData.filter((g) => Number(g.week) === Number(week.week));
     const isLive = gamesForWeek.some(
-      (g) => !(g.playedStatus && g.playedStatus.startsWith && g.playedStatus.startsWith("COMPLETED"))
+      (g) => !(g.playedStatus && g.playedStatus.startsWith && g.playedStatus.startsWith("COMPLETED")),
     );
 
     return { points: pts, possiblePoints: count, leader, positionDisplay, positionNumber, medalEmoji, isLive };
@@ -61,7 +69,7 @@ export default function WeeklyScoreCard({ userName, week, userStats, pickedThisW
       <CardContent sx={{ backgroundColor: currentWeek ? (pickedThisWeek ? "green" : "yellow") : "default" }}>
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
           <Typography variant="h6">
-            {currentWeek ? (pickedThisWeek ? "Thanks for picking!" : "You need to pick!") : ""}
+            {currentWeek ? (hasUnpickedGames ? "You have unpicked games!" : "Thanks for picking!") : ""}
           </Typography>
           {
             /* Live/Final chip */

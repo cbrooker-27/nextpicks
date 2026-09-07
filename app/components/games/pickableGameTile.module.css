@@ -11,6 +11,29 @@
     display: inline-block;
 }
 
+.locked {
+    opacity: 0.78;
+    border-color: #777;
+}
+
+.lockBanner {
+    min-height: 32px;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background-color: #333;
+    color: #ddd;
+    font-size: 0.85rem;
+}
+
+.lockBanner button {
+    color: inherit;
+    min-width: auto;
+    padding: 2px 6px;
+}
+
 /* .gamemain {
     height: 235px;
 } */
