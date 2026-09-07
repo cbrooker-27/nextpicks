@@ -1,16 +1,20 @@
 import cssStyles from "./teamTile.module.css";
-import { Bitcount_Prop_Single } from "next/font/google";
+import localFont from "next/font/local";
 import { Collapse, Fade, Slide, Zoom } from "@mui/material";
 import { useRef, useState } from "react";
 import { useSeasonStatistics } from "@/app/context/SeasonStatistics";
 
-// Using Bitcount font for scores
-const bitcount = Bitcount_Prop_Single({ subsets: ["latin"], display: "swap" });
+const bitcount = localFont({
+  src: "./fonts/BitcountPropSingle.ttf",
+  display: "swap",
+  weight: "100 900",
+  style: "normal",
+});
 
 export default function TeamTile({ team, home = false, score = null, showDetails = false }) {
   const { seasonData } = useSeasonStatistics();
   const gamesForThisTeam = seasonData.filter(
-    (game) => game.home.id === team.id || game.away.id === team.id // && game.week < seasonData.currentWeek
+    (game) => game.home.id === team.id || game.away.id === team.id, // && game.week < seasonData.currentWeek
   );
   gamesForThisTeam.sort((a, b) => b.week - a.week);
 

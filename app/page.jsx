@@ -38,7 +38,7 @@ export default function Home() {
       const stats = await getUserStatsForStandings(week, true);
       setUserStats(stats);
     }
-    if (week?.week > 1 && pickedGames.length > 0) void fetchUserStats();
+    if (week && pickedGames.length > 0) void fetchUserStats();
   }, [week, pickedGames]);
 
   useEffect(() => {
@@ -95,17 +95,20 @@ export default function Home() {
               currentWeek
               pickedThisWeek={pickedThisWeek}
             />
-            {week.week > 1 && (
-              <>
-                <WeeklyScoreCard
-                  userName={session?.user?.name}
-                  week={{ ...week, week: week.week - 1 }}
-                  userStats={standingsStats}
-                />
-                <TopThreeWidget userStats={standingsStats} week={week} />
-                <LeaderBoard userStats={standingsStats} />
-              </>
-            )}
+            {
+              /* Last week's scorecard */
+              week.week > 1 && (
+                <>
+                  <WeeklyScoreCard
+                    userName={session?.user?.name}
+                    week={{ ...week, week: week.week - 1 }}
+                    userStats={standingsStats}
+                  />
+                  <TopThreeWidget userStats={standingsStats} week={week} />
+                  <LeaderBoard userStats={standingsStats} />
+                </>
+              )
+            }
           </>
         ) : null}
         {hasGamesToSelect && (
