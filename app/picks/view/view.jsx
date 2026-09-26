@@ -4,7 +4,20 @@ import { getTeamStatisticsFromMsfWithStatus, getGamesForWeekFromMsfWithStatus } 
 import { getCurrentWeek, getPickedGames, getThisYearsActiveUsers, getAllGames } from "@/app/utils/db";
 import { useSearchParams } from "next/navigation";
 import GameScoreTile from "@/app/components/games/gameScoreTile";
-import { Skeleton, Chip, Avatar, Tooltip, Switch, FormControlLabel, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import {
+  Skeleton,
+  Chip,
+  Avatar,
+  Tooltip,
+  Switch,
+  FormControlLabel,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from "@mui/material";
 import { SmartToy } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
@@ -44,7 +57,9 @@ export default function ViewPicks() {
         const week = weekParam ? { week: Number(weekParam), season: currentWeek.season } : currentWeek;
         const results = await Promise.allSettled([
           getPickedGames(week),
-          week.week === currentWeek.week ? getGamesForWeekFromMsfWithStatus(week) : Promise.resolve({ data: [], source: "not-requested" }),
+          week.week === currentWeek.week
+            ? getGamesForWeekFromMsfWithStatus(week)
+            : Promise.resolve({ data: [], source: "not-requested" }),
           getThisYearsActiveUsers(),
           getTeamStatisticsFromMsfWithStatus(week),
           getAllGames(week.season),
@@ -54,8 +69,10 @@ export default function ViewPicks() {
 
         const [fetchedPicks, gamesWithScores, activeUsers, teamDetails, seasonData] = results;
         const storedGames = fetchedPicks.status === "fulfilled" ? JSON.parse(fetchedPicks.value) : [];
-        const gamesResult = gamesWithScores.status === "fulfilled" ? gamesWithScores.value : { data: [], source: "unavailable" };
-        const teamsResult = teamDetails.status === "fulfilled" ? teamDetails.value : { data: [], source: "unavailable" };
+        const gamesResult =
+          gamesWithScores.status === "fulfilled" ? gamesWithScores.value : { data: [], source: "unavailable" };
+        const teamsResult =
+          teamDetails.status === "fulfilled" ? teamDetails.value : { data: [], source: "unavailable" };
         const liveGamesById = new Map((gamesResult.data || []).map((game) => [String(game._id), game]));
         const displayGames = storedGames.map((game) => ({
           ...game,
@@ -67,9 +84,9 @@ export default function ViewPicks() {
         setTeamDetails(teamsResult.data);
         setSeasonData(seasonData.status === "fulfilled" ? seasonData.value : []);
         setWeek(week);
-        setMsfWarnings([
-          teamsResult.source === "unavailable" ? "Live team standings are unavailable." : null,
-        ].filter(Boolean));
+        setMsfWarnings(
+          [teamsResult.source === "unavailable" ? "Live team standings are unavailable." : null].filter(Boolean),
+        );
         setShowScoreFailureDialog(gamesResult.source === "unavailable");
         setLoadError(null);
       } catch (error) {
@@ -112,7 +129,9 @@ export default function ViewPicks() {
         </DialogActions>
       </Dialog>
       {msfWarnings.map((warning) => (
-        <div key={warning} role="status">{warning}</div>
+        <div key={warning} role="status">
+          {warning}
+        </div>
       ))}
       <h2>
         Viewing picks for week {week.week}, {week.season}

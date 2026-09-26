@@ -17,8 +17,8 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
     hasScores && favScore - game.spread < undScore && favScore > undScore
       ? cssStyles.highlight
       : hasScores && favScore === undScore
-      ? cssStyles.highlightTies
-      : "";
+        ? cssStyles.highlightTies
+        : "";
   const uuHighlight = hasScores && favScore < undScore ? cssStyles.highlight : "";
   const quarterIcons = [<LooksOne key="1" />, <LooksTwo key="2" />, <Looks3 key="3" />, <Looks4 key="4" />];
   const missingTeamStats = { wins: "-", losses: "-", ties: "-", pointsFor: "-", pointsAgainst: "-" };
@@ -47,8 +47,8 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
             choice.userId === activeUser?.name
               ? cssStyles.hilitedAvatar
               : user.npc
-              ? cssStyles.npcAvatar
-              : cssStyles.avatar
+                ? cssStyles.npcAvatar
+                : cssStyles.avatar
           }
           key={choice.userId}
           alt={choice.userId}
@@ -94,7 +94,9 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
     ? safeLiveDetails.intermission === 2
       ? "Halftime"
       : "End of " + safeLiveDetails.intermission
-    : Math.floor((safeLiveDetails.timeRemaining || 0) / 60) + ":" + ((safeLiveDetails.timeRemaining || 0) % 60).toString().padStart(2, "0");
+    : Math.floor((safeLiveDetails.timeRemaining || 0) / 60) +
+      ":" +
+      ((safeLiveDetails.timeRemaining || 0) % 60).toString().padStart(2, "0");
 
   return (
     <div className={cssStyles.gametile}>
@@ -107,7 +109,9 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
             </AvatarGroup>
           </div>
         </div>
-        <div className={cssStyles.spreadContainer + " " + (safeLiveDetails.playedStatus === "UNPLAYED" ? "" : ufHighlight)}>
+        <div
+          className={cssStyles.spreadContainer + " " + (safeLiveDetails.playedStatus === "UNPLAYED" ? "" : ufHighlight)}
+        >
           {gameChip}
           <div className={cssStyles.spread}>{game.spread === 0.5 ? "Pick'em" : "-" + game.spread}</div>
           {safeLiveDetails.playedStatus === "LIVE" && (
