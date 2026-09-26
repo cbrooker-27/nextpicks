@@ -16,7 +16,24 @@ function getMSFHeaders() {
   return headers;
 }
 
-export async function getGamesForWeekFromMsf(week) {
+async function fetchFromMsf(url, headers) {
+  const controller = new AbortController();
+  const timeoutMs = Number(process.env.MSF_TIMEOUT_MS) || 10000;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, { method: "GET", headers, signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`MSF request failed with status ${response.status}`);
+    }
+    const data = await response.json();
+    return { response, data };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export async function getGamesForWeekFromMsfWithStatus(week) {
   const msfUrl =
     "" +
     process.env.MYSPORTSFEED_BASE_URL +
@@ -33,16 +50,17 @@ export async function getGamesForWeekFromMsf(week) {
   if (process.env.DEV_MODE === "true") {
     console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
   }
-  const response = await fetch(msfUrl, { method: "GET", headers: headers });
-  if (process.env.DEV_MODE === "true") {
-    console.log(`[EXTERNAL_CALL] Return Code: ${response.status}`);
-  }
+  let response;
   try {
-    const resJson = await response.json();
+    const result = await fetchFromMsf(msfUrl, headers);
+    response = result.response;
+    const resJson = result.data;
+    if (process.env.DEV_MODE === "true") {
+      console.log(`[EXTERNAL_CALL] Return Code: ${response.status}`);
+    }
     const games = resJson.games;
     const teams = resJson.references.teamReferences;
     const simpleGames = games.map((game) => {
-      // console.log(game);
       return {
         _id: game.schedule.id,
         week: game.schedule.week,
@@ -59,14 +77,19 @@ export async function getGamesForWeekFromMsf(week) {
       };
     });
     simpleGames.sort((a, b) => a._id - b._id);
-    return simpleGames;
+    return { data: simpleGames, source: "live" };
   } catch (error) {
     console.error("Error fetching games from MSF:", error);
-    return [];
+    return { data: [], source: "unavailable" };
   }
 }
 
-export async function getTeamStatisticsFromMsf(week) {
+export async function getGamesForWeekFromMsf(week) {
+  const result = await getGamesForWeekFromMsfWithStatus(week);
+  return result.data;
+}
+
+export async function getTeamStatisticsFromMsfWithStatus(week) {
   const msfUrl = `${process.env.MYSPORTSFEED_BASE_URL}${week.season}-${
     week.season + 1
   }-regular/standings.json?stats=W,L,T,PF,PA`;
@@ -75,22 +98,32 @@ export async function getTeamStatisticsFromMsf(week) {
   if (process.env.DEV_MODE === "true") {
     console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
   }
-  const response = await fetch(msfUrl, { method: "GET", headers: headers });
-  if (process.env.DEV_MODE === "true") {
-    console.log(`[EXTERNAL_CALL] Return Code: ${response.status}`);
+  try {
+    const result = await fetchFromMsf(msfUrl, headers);
+    const response = result.response;
+    const resJson = result.data;
+    if (process.env.DEV_MODE === "true") {
+      console.log(`[EXTERNAL_CALL] Return Code: ${response.status}`);
+    }
+    const teams = resJson.teams;
+    const simpleTeams = teams.map((team) => {
+      return {
+        _id: team.team.id,
+        wins: team.stats.standings.wins,
+        losses: team.stats.standings.losses,
+        ties: team.stats.standings.ties,
+        pointsFor: team.stats.standings.pointsFor,
+        pointsAgainst: team.stats.standings.pointsAgainst,
+      };
+    });
+    return { data: simpleTeams, source: "live" };
+  } catch (error) {
+    console.error("Error fetching team statistics from MSF:", error);
+    return { data: [], source: "unavailable" };
   }
-  const resJson = await response.json();
-  const teams = resJson.teams;
-  const simpleTeams = teams.map((team) => {
-    // console.log(game);
-    return {
-      _id: team.team.id,
-      wins: team.stats.standings.wins,
-      losses: team.stats.standings.losses,
-      ties: team.stats.standings.ties,
-      pointsFor: team.stats.standings.pointsFor,
-      pointsAgainst: team.stats.standings.pointsAgainst,
-    };
-  });
-  return simpleTeams;
+}
+
+export async function getTeamStatisticsFromMsf(week) {
+  const result = await getTeamStatisticsFromMsfWithStatus(week);
+  return result.data;
 }

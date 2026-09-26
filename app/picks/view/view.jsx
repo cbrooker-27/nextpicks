@@ -1,10 +1,10 @@
 "use client";
 
-import { getTeamStatisticsFromMsf, getGamesForWeekFromMsf } from "@/app/lib/msf";
+import { getTeamStatisticsFromMsfWithStatus, getGamesForWeekFromMsfWithStatus } from "@/app/lib/msf";
 import { getCurrentWeek, getPickedGames, getThisYearsActiveUsers, getAllGames } from "@/app/utils/db";
 import { useSearchParams } from "next/navigation";
 import GameScoreTile from "@/app/components/games/gameScoreTile";
-import { Skeleton, Chip, Avatar, Tooltip, Switch, FormControlLabel, Box } from "@mui/material";
+import { Skeleton, Chip, Avatar, Tooltip, Switch, FormControlLabel, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { SmartToy } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
@@ -20,6 +20,9 @@ export default function ViewPicks() {
   const [teamDetails, setTeamDetails] = useState([]);
   const [seasonData, setSeasonData] = useState([]);
   const [week, setWeek] = useState(null);
+  const [loadError, setLoadError] = useState(null);
+  const [msfWarnings, setMsfWarnings] = useState([]);
+  const [showScoreFailureDialog, setShowScoreFailureDialog] = useState(false);
   const { data: session, status } = useSession();
   const weekParam = useSearchParams().get("week");
   const historicalWeek = weekParam && weekParam !== week?.week;
@@ -30,36 +33,87 @@ export default function ViewPicks() {
   }
 
   useEffect(() => {
+    let isMounted = true;
+
     async function fetchData() {
-      // always fetch current week to obtain season if a week param is provided
-      const currentWeek = await getCurrentWeek();
-      const week = weekParam ? { week: Number(weekParam), season: currentWeek.season } : currentWeek;
-      const fetchedPicks = await getPickedGames(week);
-      if (week.week === currentWeek.week) {
-        const gamesWithScores = await getGamesForWeekFromMsf(week);
-        setGamesWithScores(gamesWithScores);
+      try {
+        const currentWeek = await getCurrentWeek();
+        if (!isMounted) return;
+        setIsLoading(true);
+        setLoadError(null);
+        const week = weekParam ? { week: Number(weekParam), season: currentWeek.season } : currentWeek;
+        const results = await Promise.allSettled([
+          getPickedGames(week),
+          week.week === currentWeek.week ? getGamesForWeekFromMsfWithStatus(week) : Promise.resolve({ data: [], source: "not-requested" }),
+          getThisYearsActiveUsers(),
+          getTeamStatisticsFromMsfWithStatus(week),
+          getAllGames(week.season),
+        ]);
+
+        if (!isMounted) return;
+
+        const [fetchedPicks, gamesWithScores, activeUsers, teamDetails, seasonData] = results;
+        const storedGames = fetchedPicks.status === "fulfilled" ? JSON.parse(fetchedPicks.value) : [];
+        const gamesResult = gamesWithScores.status === "fulfilled" ? gamesWithScores.value : { data: [], source: "unavailable" };
+        const teamsResult = teamDetails.status === "fulfilled" ? teamDetails.value : { data: [], source: "unavailable" };
+        const liveGamesById = new Map((gamesResult.data || []).map((game) => [String(game._id), game]));
+        const displayGames = storedGames.map((game) => ({
+          ...game,
+          ...(liveGamesById.get(String(game._id)) || {}),
+        }));
+        setPickedGames(storedGames);
+        setGamesWithScores(displayGames);
+        setActiveUsers(activeUsers.status === "fulfilled" ? JSON.parse(activeUsers.value) : []);
+        setTeamDetails(teamsResult.data);
+        setSeasonData(seasonData.status === "fulfilled" ? seasonData.value : []);
+        setWeek(week);
+        setMsfWarnings([
+          teamsResult.source === "unavailable" ? "Live team standings are unavailable." : null,
+        ].filter(Boolean));
+        setShowScoreFailureDialog(gamesResult.source === "unavailable");
+        setLoadError(null);
+      } catch (error) {
+        console.error("Error loading view picks:", error);
+        if (isMounted) setLoadError("Unable to load picks right now.");
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
-
-      const activeUsers = await getThisYearsActiveUsers();
-      const teamDetails = await getTeamStatisticsFromMsf(week);
-      const seasonData = await getAllGames(week.season);
-
-      setSeasonData(seasonData);
-      setTeamDetails(teamDetails);
-      setActiveUsers(JSON.parse(activeUsers));
-      setPickedGames(JSON.parse(fetchedPicks));
-      setWeek(week);
-      setIsLoading(false);
     }
+
     void fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [weekParam]);
 
   updateUserPoints(pickedGames, gamesWithScores, activeUsers);
 
   return isLoading ? (
     <Skeleton />
+  ) : loadError ? (
+    <div role="alert">{loadError}</div>
   ) : (
     <div>
+      <Dialog
+        open={showScoreFailureDialog}
+        onClose={() => setShowScoreFailureDialog(false)}
+        aria-labelledby="score-retrieval-failure-title"
+        aria-describedby="score-retrieval-failure-description"
+      >
+        <DialogTitle id="score-retrieval-failure-title">Live score retrieval failed</DialogTitle>
+        <DialogContent id="score-retrieval-failure-description">
+          Previously saved scores from the games table are being shown where available. They may be out of date.
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowScoreFailureDialog(false)} autoFocus>
+            Continue
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {msfWarnings.map((warning) => (
+        <div key={warning} role="status">{warning}</div>
+      ))}
       <h2>
         Viewing picks for week {week.week}, {week.season}
       </h2>
@@ -136,7 +190,7 @@ export default function ViewPicks() {
       <br />
       <SeasonStatisticsContext.Provider value={{ seasonData: seasonData }}>
         {pickedGames.map((game) => {
-          const gameData = historicalWeek ? game : gamesWithScores.find((g) => g._id === game._id);
+          const gameData = historicalWeek ? game : gamesWithScores.find((g) => String(g._id) === String(game._id));
           return (
             <GameScoreTile
               game={game}
@@ -161,6 +215,14 @@ function updateUserPoints(pickedGames, gamesWithScores, activeUsers) {
   });
   pickedGames.map((game) => {
     const gameData = gamesWithScores?.length > 0 ? gamesWithScores.find((g) => g._id === game._id) : game;
+    if (
+      !gameData ||
+      !Number.isFinite(gameData.homeScore) ||
+      !Number.isFinite(gameData.awayScore) ||
+      typeof gameData.playedStatus !== "string"
+    ) {
+      return;
+    }
     let gamePoints = [];
     const favScore = game.awayFavorite ? gameData.awayScore : gameData.homeScore;
     const undScore = game.awayFavorite ? gameData.homeScore : gameData.awayScore;

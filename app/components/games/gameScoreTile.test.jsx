@@ -54,4 +54,17 @@ describe('GameScoreTile', () => {
     // The avatar has alt text 'TestUser'
     expect(screen.getByAltText('TestUser')).toBeInTheDocument();
   });
+
+  it('renders safely when MSF game details are unavailable', () => {
+    render(
+      <GameScoreTile
+        game={mockGame}
+        users={mockUsers}
+        activeUser={{ name: 'TestUser' }}
+        teamDetails={[]}
+      />
+    );
+
+    expect(screen.getByText('Scores unavailable')).toBeInTheDocument();
+  });
 });

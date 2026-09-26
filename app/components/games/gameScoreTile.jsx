@@ -8,27 +8,32 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
   const startTime = new Date(game.startTime);
   const favorite = structuredClone(game.awayFavorite ? game.away : game.home);
   const underdog = structuredClone(game.awayFavorite ? game.home : game.away);
-  const favScore = game.awayFavorite ? liveDetails.awayScore : liveDetails.homeScore;
-  const undScore = game.awayFavorite ? liveDetails.homeScore : liveDetails.awayScore;
-  const ffHighlight = favScore - game.spread > undScore ? cssStyles.highlight : "";
+  const safeLiveDetails = liveDetails || { playedStatus: "UNAVAILABLE" };
+  const favScore = game.awayFavorite ? safeLiveDetails.awayScore : safeLiveDetails.homeScore;
+  const undScore = game.awayFavorite ? safeLiveDetails.homeScore : safeLiveDetails.awayScore;
+  const hasScores = Number.isFinite(favScore) && Number.isFinite(undScore);
+  const ffHighlight = hasScores && favScore - game.spread > undScore ? cssStyles.highlight : "";
   const ufHighlight =
-    favScore - game.spread < undScore && favScore > undScore
+    hasScores && favScore - game.spread < undScore && favScore > undScore
       ? cssStyles.highlight
-      : favScore === undScore
+      : hasScores && favScore === undScore
       ? cssStyles.highlightTies
       : "";
-  const uuHighlight = favScore < undScore ? cssStyles.highlight : "";
+  const uuHighlight = hasScores && favScore < undScore ? cssStyles.highlight : "";
   const quarterIcons = [<LooksOne key="1" />, <LooksTwo key="2" />, <Looks3 key="3" />, <Looks4 key="4" />];
-  favorite.stats = teamDetails.find((team) => team._id === favorite.id);
-  underdog.stats = teamDetails.find((team) => team._id === underdog.id);
+  const missingTeamStats = { wins: "-", losses: "-", ties: "-", pointsFor: "-", pointsAgainst: "-" };
+  favorite.stats = teamDetails?.find((team) => team._id === favorite.id) || missingTeamStats;
+  underdog.stats = teamDetails?.find((team) => team._id === underdog.id) || missingTeamStats;
 
   const gameChip =
-    liveDetails.playedStatus === "UNPLAYED" ? (
+    safeLiveDetails.playedStatus === "UNPLAYED" ? (
       <Chip label="Upcoming" color="warning" icon={<Update />} />
-    ) : liveDetails.playedStatus === "LIVE" ? (
+    ) : safeLiveDetails.playedStatus === "LIVE" ? (
       <Chip label="Live" color="error" icon={<LiveTv />} />
-    ) : (
+    ) : safeLiveDetails.playedStatus?.startsWith("COMPLETED") ? (
       <Chip label="Final" color="success" icon={<Sports />} />
+    ) : (
+      <Chip label="Scores unavailable" color="warning" />
     );
 
   const generateAvatar = (choice) => {
@@ -85,16 +90,16 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
     .filter(Boolean)
     .sort((a, b) => (a.key === activeUser?.name ? 1 : -1));
 
-  const liveLabel = liveDetails.intermission
-    ? liveDetails.intermission === 2
+  const liveLabel = safeLiveDetails.intermission
+    ? safeLiveDetails.intermission === 2
       ? "Halftime"
-      : "End of " + liveDetails.intermission
-    : Math.floor(liveDetails.timeRemaining / 60) + ":" + (liveDetails.timeRemaining % 60).toString().padStart(2, "0");
+      : "End of " + safeLiveDetails.intermission
+    : Math.floor((safeLiveDetails.timeRemaining || 0) / 60) + ":" + ((safeLiveDetails.timeRemaining || 0) % 60).toString().padStart(2, "0");
 
   return (
     <div className={cssStyles.gametile}>
       <div className={cssStyles.teams}>
-        <div className={cssStyles.gameteam + " " + (liveDetails.playedStatus === "UNPLAYED" ? "" : ffHighlight)}>
+        <div className={cssStyles.gameteam + " " + (safeLiveDetails.playedStatus === "UNPLAYED" ? "" : ffHighlight)}>
           <TeamTile team={favorite} home={!game.awayFavorite} score={favScore} />
           <div className={cssStyles.avatarsTeam}>
             <AvatarGroup max={30} spacing={0}>
@@ -102,14 +107,14 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
             </AvatarGroup>
           </div>
         </div>
-        <div className={cssStyles.spreadContainer + " " + (liveDetails.playedStatus === "UNPLAYED" ? "" : ufHighlight)}>
+        <div className={cssStyles.spreadContainer + " " + (safeLiveDetails.playedStatus === "UNPLAYED" ? "" : ufHighlight)}>
           {gameChip}
           <div className={cssStyles.spread}>{game.spread === 0.5 ? "Pick'em" : "-" + game.spread}</div>
-          {liveDetails.playedStatus === "LIVE" && (
+          {safeLiveDetails.playedStatus === "LIVE" && (
             <Chip
               label={liveLabel}
               color="error"
-              icon={liveDetails.intermission ? null : quarterIcons[liveDetails.currentQuarter - 1]}
+              icon={safeLiveDetails.intermission ? null : quarterIcons[safeLiveDetails.currentQuarter - 1]}
             />
           )}
           <div className={cssStyles.avatarsSpread}>
@@ -118,7 +123,7 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
             </AvatarGroup>
           </div>
         </div>
-        <div className={cssStyles.gameteam + " " + (liveDetails.playedStatus === "UNPLAYED" ? "" : uuHighlight)}>
+        <div className={cssStyles.gameteam + " " + (safeLiveDetails.playedStatus === "UNPLAYED" ? "" : uuHighlight)}>
           <TeamTile team={underdog} home={game.awayFavorite} score={undScore} />
           <div className={cssStyles.avatarsTeam}>
             <AvatarGroup max={30} spacing={0}>

@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getCurrentWeek, getPickableGames, updateCurrentWeek, updateGameInDb } from "../../utils/db";
+import { getCurrentWeek, getPickableGames, updateCurrentWeek, updateGameScoresInDb } from "../../utils/db";
 import { Box, Button, MenuItem, Select, FormControl, InputLabel, Skeleton, Typography } from "@mui/material";
-import { getGamesForWeekFromMsf } from "@/app/lib/msf";
+import { getGamesForWeekFromMsfWithStatus } from "@/app/lib/msf";
 
 const ChangeWeek = () => {
   const [week, setWeek] = useState("");
@@ -13,17 +13,19 @@ const ChangeWeek = () => {
   const [updateInProgress, setUpdateInProgress] = useState(false);
   const [gamesWithScores, setGamesWithScores] = useState([]);
   const [fetchedPicks, setFetchedPicks] = useState([]);
+  const [msfUnavailable, setMsfUnavailable] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
       const fetchedWeek = await getCurrentWeek();
       const fetchedPicks = await getPickableGames(fetchedWeek);
-      const gamesWithScores = await getGamesForWeekFromMsf(fetchedWeek);
+      const gamesResult = await getGamesForWeekFromMsfWithStatus(fetchedWeek);
       setWeek(fetchedWeek.week);
       setNewWeek(fetchedWeek.week + 1);
       setSeason(fetchedWeek.season);
       setNewSeason(fetchedWeek.season);
-      setGamesWithScores(gamesWithScores);
+      setGamesWithScores(gamesResult.data);
+      setMsfUnavailable(gamesResult.source === "unavailable");
       setFetchedPicks(fetchedPicks);
       setIsLoading(false);
     }
@@ -44,11 +46,16 @@ const ChangeWeek = () => {
     await Promise.all(
       fetchedPicks.map((game) => {
         const msfGameData = gamesWithScores.find((g) => g._id === game._id);
-        if (msfGameData.playedStatus === "COMPLETED" && game.playedStatus !== "COMPLETED") {
-          game.playedStatus = msfGameData.playedStatus;
-          game.awayScore = msfGameData.awayScore;
-          game.homeScore = msfGameData.homeScore;
-          updateGameInDb(game);
+        if (
+          msfGameData?.playedStatus === "COMPLETED" &&
+          Number.isFinite(msfGameData.awayScore) &&
+          Number.isFinite(msfGameData.homeScore)
+        ) {
+          return updateGameScoresInDb(game._id, {
+            playedStatus: msfGameData.playedStatus,
+            awayScore: msfGameData.awayScore,
+            homeScore: msfGameData.homeScore,
+          });
         }
       }),
     );
@@ -107,7 +114,12 @@ const ChangeWeek = () => {
           Apply Changes
         </Button>
       </div>
-      {fetchedPicks.filter((game) => game.homeScore === null).length} Games needing to be finalized for week {week}
+      {msfUnavailable && (
+        <Typography role="status" color="warning.main" sx={{ mt: 2 }}>
+          MSF scores are unavailable. Any scores already saved for completed games will be kept.
+        </Typography>
+      )}
+      {fetchedPicks.filter((game) => game.homeScore == null).length} Games needing to be finalized for week {week}
       <br />
       {gamesWithScores.filter((game) => game.playedStatus === "COMPLETED").length} Games ready to be finalized
     </div>

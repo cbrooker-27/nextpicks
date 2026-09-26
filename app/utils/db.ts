@@ -107,6 +107,19 @@ export const updateGameInDb = async (game: Game) => {
   return updatedGame;
 };
 
+export const updateGameScoresInDb = async (
+  gameId: Game["_id"],
+  scores: Pick<Game, "homeScore" | "awayScore" | "playedStatus">
+) => {
+  const client = await connectToDatabase();
+  try {
+    const db: Db = client.db(process.env.MONGODB_DB || "picks");
+    return await db.collection<Game>("games").updateOne({ _id: gameId as any }, { $set: scores });
+  } finally {
+    await client.close();
+  }
+};
+
 export const getAllGames = async (season: number): Promise<WithId<Game>[]> => {
   const client = await connectToDatabase();
   const db: Db = client.db(process.env.MONGODB_DB || "picks");

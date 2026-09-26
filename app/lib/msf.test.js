@@ -55,6 +55,7 @@ describe('msf.js', () => {
   it('getGamesForWeekFromMsf formats games correctly', async () => {
     fetch.mockResolvedValueOnce({
       status: 200,
+      ok: true,
       json: async () => mockGamesResponse
     });
 
@@ -76,6 +77,7 @@ describe('msf.js', () => {
     dbUtils.getCurrentWeek.mockResolvedValueOnce({ season: 2025, week: 2 });
     fetch.mockResolvedValueOnce({
       status: 200,
+      ok: true,
       json: async () => mockGamesResponse
     });
 
@@ -90,6 +92,7 @@ describe('msf.js', () => {
   it('getTeamStatisticsFromMsf formats team stats correctly', async () => {
     fetch.mockResolvedValueOnce({
       status: 200,
+      ok: true,
       json: async () => ({
         teams: [
           {
@@ -105,5 +108,24 @@ describe('msf.js', () => {
     expect(teams).toHaveLength(1);
     expect(teams[0]._id).toBe(10);
     expect(teams[0].wins).toBe(10);
+  });
+
+  it('returns no games when the MSF request is aborted', async () => {
+    fetch.mockImplementationOnce((_url, options) => {
+      options.signal.addEventListener('abort', () => {});
+      return new Promise((_resolve, reject) => {
+        options.signal.addEventListener('abort', () => reject(new Error('aborted')));
+      });
+    });
+
+    process.env.MSF_TIMEOUT_MS = '1';
+
+    await expect(getGamesForWeekFromMsf({ season: 2025, week: 1 })).resolves.toEqual([]);
+  });
+
+  it('returns no games when the MSF request fails', async () => {
+    fetch.mockRejectedValueOnce(new Error('MSF unavailable'));
+
+    await expect(getGamesForWeekFromMsf({ season: 2025, week: 1 })).resolves.toEqual([]);
   });
 });
