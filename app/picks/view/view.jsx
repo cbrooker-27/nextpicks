@@ -17,11 +17,25 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  CircularProgress,
+  Typography,
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
 } from "@mui/material";
-import { SmartToy } from "@mui/icons-material";
-import { useEffect, useState } from "react";
+import { SmartToy, CheckCircleOutlined, CancelOutlined, RemoveCircleOutlined, ExpandMore } from "@mui/icons-material";
+import { useEffect, useRef, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { SeasonStatisticsContext } from "@/app/context/SeasonStatistics";
+
+const INITIAL_CALL_STATUSES = [
+  { key: "week", label: "Check the current week and season", status: "loading" },
+  { key: "picks", label: "Load your picks and saved game scores", status: "loading" },
+  { key: "users", label: "Load the player list", status: "loading" },
+  { key: "season", label: "Load season game history", status: "loading" },
+  { key: "scores", label: "Refresh live game scores", status: "loading" },
+  { key: "teams", label: "Getting team records", status: "loading" },
+];
 
 export default function ViewPicks() {
   const [pickedGames, setPickedGames] = useState([]);
@@ -34,8 +48,11 @@ export default function ViewPicks() {
   const [seasonData, setSeasonData] = useState([]);
   const [week, setWeek] = useState(null);
   const [loadError, setLoadError] = useState(null);
-  const [msfWarnings, setMsfWarnings] = useState([]);
   const [showScoreFailureDialog, setShowScoreFailureDialog] = useState(false);
+  const [callStatuses, setCallStatuses] = useState(INITIAL_CALL_STATUSES);
+  const [statusExpanded, setStatusExpanded] = useState(true);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const requestStartedAt = useRef(null);
   const { data: session, status } = useSession();
   const weekParam = useSearchParams().get("week");
   const historicalWeek = weekParam && weekParam !== week?.week;
@@ -49,49 +66,101 @@ export default function ViewPicks() {
     let isMounted = true;
 
     async function fetchData() {
+      requestStartedAt.current = Date.now();
+      const setCallStatus = (key, status) => {
+        setCallStatuses((current) => current.map((call) => (call.key === key ? { ...call, status } : call)));
+      };
+
+      let currentWeek;
       try {
-        const currentWeek = await getCurrentWeek();
-        if (!isMounted) return;
-        setIsLoading(true);
-        setLoadError(null);
-        const week = weekParam ? { week: Number(weekParam), season: currentWeek.season } : currentWeek;
-        const results = await Promise.allSettled([
-          getPickedGames(week),
-          week.week === currentWeek.week
-            ? getGamesForWeekFromMsfWithStatus(week)
-            : Promise.resolve({ data: [], source: "not-requested" }),
-          getThisYearsActiveUsers(),
-          getTeamStatisticsFromMsfWithStatus(week),
-          getAllGames(week.season),
-        ]);
-
-        if (!isMounted) return;
-
-        const [fetchedPicks, gamesWithScores, activeUsers, teamDetails, seasonData] = results;
-        const storedGames = fetchedPicks.status === "fulfilled" ? JSON.parse(fetchedPicks.value) : [];
-        const gamesResult =
-          gamesWithScores.status === "fulfilled" ? gamesWithScores.value : { data: [], source: "unavailable" };
-        const teamsResult =
-          teamDetails.status === "fulfilled" ? teamDetails.value : { data: [], source: "unavailable" };
-        const liveGamesById = new Map((gamesResult.data || []).map((game) => [String(game._id), game]));
-        const displayGames = storedGames.map((game) => ({
-          ...game,
-          ...(liveGamesById.get(String(game._id)) || {}),
-        }));
-        setPickedGames(storedGames);
-        setGamesWithScores(displayGames);
-        setActiveUsers(activeUsers.status === "fulfilled" ? JSON.parse(activeUsers.value) : []);
-        setTeamDetails(teamsResult.data);
-        setSeasonData(seasonData.status === "fulfilled" ? seasonData.value : []);
-        setWeek(week);
-        setMsfWarnings(
-          [teamsResult.source === "unavailable" ? "Live team standings are unavailable." : null].filter(Boolean),
-        );
-        setShowScoreFailureDialog(gamesResult.source === "unavailable");
-        setLoadError(null);
+        currentWeek = await getCurrentWeek();
       } catch (error) {
-        console.error("Error loading view picks:", error);
-        if (isMounted) setLoadError("Unable to load picks right now.");
+        console.error("Error loading current week:", error);
+        if (!isMounted) return;
+        setCallStatus("week", "failed");
+        setCallStatuses((current) =>
+          current.map((call) => (call.key === "week" ? call : { ...call, status: "skipped" })),
+        );
+        setLoadError("Unable to load picks right now.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (!isMounted) return;
+
+      setCallStatuses(INITIAL_CALL_STATUSES);
+      setCallStatus("week", "success");
+      setElapsedMs(0);
+      setIsLoading(true);
+      setLoadError(null);
+      const week = weekParam ? { week: Number(weekParam), season: currentWeek.season } : currentWeek;
+      setWeek(week);
+
+      void getThisYearsActiveUsers()
+        .then((users) => {
+          if (!isMounted) return;
+          setActiveUsers(JSON.parse(users));
+          setCallStatus("users", "success");
+        })
+        .catch((error) => {
+          console.error("Error loading active users:", error);
+          if (isMounted) setCallStatus("users", "failed");
+        });
+
+      void getAllGames(week.season)
+        .then((games) => {
+          if (!isMounted) return;
+          setSeasonData(games);
+          setCallStatus("season", "success");
+        })
+        .catch((error) => {
+          console.error("Error loading season games:", error);
+          if (isMounted) setCallStatus("season", "failed");
+        });
+
+      void getTeamStatisticsFromMsfWithStatus(week)
+        .then((result) => {
+          if (!isMounted) return;
+          setTeamDetails(result.data || []);
+          setCallStatus("teams", result.source === "unavailable" ? "failed" : "success");
+        })
+        .catch((error) => {
+          console.error("Error loading MSF team standings:", error);
+          if (isMounted) setCallStatus("teams", "failed");
+        });
+
+      if (week.week === currentWeek.week) {
+        void getGamesForWeekFromMsfWithStatus(week)
+          .then((result) => {
+            if (!isMounted) return;
+            setGamesWithScores(result.data || []);
+            setShowScoreFailureDialog(result.source === "unavailable");
+            setCallStatus("scores", result.source === "unavailable" ? "failed" : "success");
+          })
+          .catch((error) => {
+            console.error("Error loading MSF game scores:", error);
+            if (!isMounted) return;
+            setShowScoreFailureDialog(true);
+            setCallStatus("scores", "failed");
+          });
+      } else {
+        setGamesWithScores([]);
+        setShowScoreFailureDialog(false);
+        setCallStatus("scores", "skipped");
+      }
+
+      try {
+        const fetchedPicks = await getPickedGames(week);
+        if (!isMounted) return;
+        setPickedGames(JSON.parse(fetchedPicks));
+        setLoadError(null);
+        setCallStatus("picks", "success");
+      } catch (error) {
+        console.error("Error loading picks:", error);
+        if (isMounted) {
+          setLoadError("Unable to load picks right now.");
+          setCallStatus("picks", "failed");
+        }
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -104,14 +173,71 @@ export default function ViewPicks() {
     };
   }, [weekParam]);
 
+  const requestedCalls = callStatuses.filter((call) => call.status !== "skipped");
+  const succeededCalls = requestedCalls.filter((call) => call.status === "success").length;
+  const hasPendingCalls = requestedCalls.some((call) => call.status === "loading");
+  const hasFailedCalls = requestedCalls.some((call) => call.status === "failed");
+  const allCallsResolved = requestedCalls.length > 0 && !hasPendingCalls;
+
+  useEffect(() => {
+    if (allCallsResolved) {
+      setElapsedMs(Date.now() - requestStartedAt.current);
+      setStatusExpanded(hasFailedCalls);
+      return;
+    }
+
+    setStatusExpanded(true);
+    const timer = setInterval(() => setElapsedMs(Date.now() - requestStartedAt.current), 100);
+    return () => clearInterval(timer);
+  }, [allCallsResolved, hasFailedCalls]);
+
   updateUserPoints(pickedGames, gamesWithScores, activeUsers);
 
-  return isLoading ? (
-    <Skeleton />
-  ) : loadError ? (
-    <div role="alert">{loadError}</div>
-  ) : (
-    <div>
+  return (
+    <>
+      <Accordion
+        component="section"
+        aria-label="Data retrieval status"
+        expanded={!allCallsResolved || statusExpanded}
+        onChange={(_event, expanded) => {
+          if (allCallsResolved) setStatusExpanded(expanded);
+        }}
+        disableGutters
+        sx={{ mb: 2, border: "1px solid", borderColor: "divider", borderRadius: 1, "&:before": { display: "none" } }}
+      >
+        <AccordionSummary expandIcon={<ExpandMore />}>
+          <Typography variant="subtitle2">
+            {succeededCalls} of {requestedCalls.length} calls succeeded
+            {allCallsResolved ? " · resolved in " : " · "}
+            {(elapsedMs / 1000).toFixed(1)}s{allCallsResolved ? "" : " elapsed"}
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box aria-live="polite" sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+            {callStatuses.map((call) => (
+              <Box key={call.key} sx={{ display: "flex", alignItems: "center", gap: 1, minHeight: 24 }}>
+                <CallStatusIcon status={call.status} />
+                <Typography variant="body2">{call.label}</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ ml: "auto" }}>
+                  {call.status === "loading"
+                    ? "Loading"
+                    : call.status === "success"
+                      ? "Done"
+                      : call.status === "failed"
+                        ? "Failed"
+                        : "Not needed"}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </AccordionDetails>
+      </Accordion>
+      {isLoading ? (
+        <Skeleton />
+      ) : loadError ? (
+        <div role="alert">{loadError}</div>
+      ) : (
+        <div>
       <Dialog
         open={showScoreFailureDialog}
         onClose={() => setShowScoreFailureDialog(false)}
@@ -120,7 +246,7 @@ export default function ViewPicks() {
       >
         <DialogTitle id="score-retrieval-failure-title">Live score retrieval failed</DialogTitle>
         <DialogContent id="score-retrieval-failure-description">
-          Previously saved scores from the games table are being shown where available. They may be out of date.
+          Live game scores are unavailable. Showing the latest scores we have.
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowScoreFailureDialog(false)} autoFocus>
@@ -128,11 +254,6 @@ export default function ViewPicks() {
           </Button>
         </DialogActions>
       </Dialog>
-      {msfWarnings.map((warning) => (
-        <div key={warning} role="status">
-          {warning}
-        </div>
-      ))}
       <h2>
         Viewing picks for week {week.week}, {week.season}
       </h2>
@@ -209,11 +330,16 @@ export default function ViewPicks() {
       <br />
       <SeasonStatisticsContext.Provider value={{ seasonData: seasonData }}>
         {pickedGames.map((game) => {
-          const gameData = historicalWeek ? game : gamesWithScores.find((g) => String(g._id) === String(game._id));
+          const liveDetails = historicalWeek
+            ? game
+            : {
+                ...game,
+                ...(gamesWithScores.find((g) => String(g._id) === String(game._id)) || {}),
+              };
           return (
             <GameScoreTile
               game={game}
-              liveDetails={gameData}
+              liveDetails={liveDetails}
               key={game._id}
               users={activeUsers}
               activeUser={session?.user}
@@ -223,8 +349,17 @@ export default function ViewPicks() {
           );
         })}
       </SeasonStatisticsContext.Provider>
-    </div>
+        </div>
+      )}
+    </>
   );
+}
+
+function CallStatusIcon({ status }) {
+  if (status === "loading") return <CircularProgress size={16} aria-label="Loading" />;
+  if (status === "success") return <CheckCircleOutlined color="success" aria-label="Done" />;
+  if (status === "failed") return <CancelOutlined color="error" aria-label="Failed" />;
+  return <RemoveCircleOutlined color="disabled" aria-label="Not needed" />;
 }
 
 function updateUserPoints(pickedGames, gamesWithScores, activeUsers) {
@@ -233,7 +368,10 @@ function updateUserPoints(pickedGames, gamesWithScores, activeUsers) {
     user.volatilePoints = 0;
   });
   pickedGames.map((game) => {
-    const gameData = gamesWithScores?.length > 0 ? gamesWithScores.find((g) => g._id === game._id) : game;
+    const gameData = {
+      ...game,
+      ...(gamesWithScores.find((g) => String(g._id) === String(game._id)) || {}),
+    };
     if (
       !gameData ||
       !Number.isFinite(gameData.homeScore) ||
