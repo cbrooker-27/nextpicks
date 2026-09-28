@@ -19,9 +19,13 @@ jest.mock("@/app/lib/msf.js", () => ({
   getTeamStatisticsFromMsfWithStatus: jest.fn(),
 }));
 
-jest.mock("./makePicksForm", () => function MockMakePicksForm({ games }) {
-  return <div data-testid="make-picks-form">Form for {games.length} games</div>;
-});
+jest.mock(
+  "./makePicksForm",
+  () =>
+    function MockMakePicksForm({ games }) {
+      return <div data-testid="make-picks-form">Form for {games.length} games</div>;
+    },
+);
 
 function deferred() {
   let resolve;
