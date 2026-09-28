@@ -15,8 +15,9 @@ export default function PickableGameTile({ game, index, choiceChanged, teamDetai
   const [checked, setChecked] = useState(false);
   const favorite = structuredClone(game.awayFavorite ? game.away : game.home);
   const underdog = structuredClone(game.awayFavorite ? game.home : game.away);
-  favorite.stats = teamDetails.find((team) => team._id === favorite.id);
-  underdog.stats = teamDetails.find((team) => team._id === underdog.id);
+  const missingTeamStats = { wins: "-", losses: "-", ties: "-", pointsFor: "-", pointsAgainst: "-" };
+  favorite.stats = teamDetails?.find((team) => team._id === favorite.id) || missingTeamStats;
+  underdog.stats = teamDetails?.find((team) => team._id === underdog.id) || missingTeamStats;
 
   let ffStyle = { color: "white" };
   let ufStyle = { color: "white" };
