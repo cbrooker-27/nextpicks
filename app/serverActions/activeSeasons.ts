@@ -2,21 +2,12 @@
 
 import { ObjectId } from "mongodb";
 import { auth } from "../../auth";
+import { isAdminEmail } from "../lib/admin";
 import { connectToDatabase } from "../utils/db";
-
-function isAdmin(email: string | null | undefined) {
-  // Keep administrator identity server-side; the client must never be trusted for this decision.
-  const administrators = (process.env.ADMIN_EMAILS || "")
-    .split(",")
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean);
-
-  return Boolean(email && administrators.includes(email.toLowerCase()));
-}
 
 export async function updateActiveSeason({ season, selectedUserIds }: { season: number; selectedUserIds: string[] }) {
   const session = await auth();
-  if (!isAdmin(session?.user?.email)) {
+  if (!isAdminEmail(session?.user?.email)) {
     throw new Error("You are not authorized to manage active seasons.");
   }
 

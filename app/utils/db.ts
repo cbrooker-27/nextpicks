@@ -1,6 +1,8 @@
 "use server";
 import { MongoClient, Db, WithId } from "mongodb";
 import { User, Game, UserChoice, WeekConfig } from "../../types";
+import { auth } from "../../auth";
+import { isAdminEmail } from "../lib/admin";
 
 const uri = `mongodb+srv://${process.env.MONGODB_USER}:${process.env.MONGODB_PWD}@${process.env.MONGODB_SERVER}?retryWrites=true&w=majority`;
 
@@ -55,6 +57,11 @@ export const getCurrentWeek = async (): Promise<{ week: number; season: number }
 };
 
 export const updateCurrentWeek = async (newWeekOrConfig: number | WeekConfig) => {
+  const session = await auth();
+  if (!isAdminEmail(session?.user?.email)) {
+    throw new Error("You are not authorized to change the current week.");
+  }
+
   const newWeek = typeof newWeekOrConfig === "number" ? newWeekOrConfig : newWeekOrConfig.week;
   const newSeason = typeof newWeekOrConfig === "number" ? undefined : Number(newWeekOrConfig.season);
   const lastWeeksPicks: Game[] = JSON.parse(await getThisWeeksPickedGames());
@@ -111,6 +118,11 @@ export const updateGameScoresInDb = async (
   gameId: Game["_id"],
   scores: Pick<Game, "homeScore" | "awayScore" | "playedStatus">
 ) => {
+  const session = await auth();
+  if (!isAdminEmail(session?.user?.email)) {
+    throw new Error("You are not authorized to update game scores.");
+  }
+
   const client = await connectToDatabase();
   try {
     const db: Db = client.db(process.env.MONGODB_DB || "picks");
