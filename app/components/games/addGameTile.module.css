@@ -3,8 +3,8 @@
     border-style: solid;
     border-color: blue;
     border-width: 3px;
-    margin: 5px;
-    width: 500px;
+    width: 100%;
+    max-width: 680px;
     background-color: black;
     color: white;
     display: inline-block;
@@ -19,12 +19,18 @@
 
 .teams {
     background-color: inherit;
-    
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 88px minmax(0, 1fr);
+    align-items: center;
+    justify-items: center;
 }
 
 .spread {
-    display: inline-block;
-    vertical-align: middle;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
 }
 .spread input{ 
     width: 5rem;

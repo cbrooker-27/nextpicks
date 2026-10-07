@@ -95,6 +95,11 @@ export default function ResponsiveDrawer(props) {
       sectionname: "Admin",
       navItems: [
         {
+          itemname: "Admin Player Picks",
+          icon: TaskAlt,
+          target: "/admin/overridePicks",
+        },
+        {
           itemname: "Change Week",
           icon: EditCalendar,
           target: "/picks/changeWeek",

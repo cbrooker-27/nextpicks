@@ -10,7 +10,7 @@ export interface User {
 }
 
 export interface Game {
-  _id?: ObjectId | string;
+  _id?: ObjectId | string | number;
   season: number;
   week: number;
   startTime: string | Date;
@@ -24,10 +24,11 @@ export interface Game {
 
 export interface UserChoice {
   _id?: ObjectId | string;
-  gameId: ObjectId | string;
+  gameId: ObjectId | string | number;
   userId: string;
   choice: 'ff' | 'uu' | 'uf'; // favorite favorite, underdog underdog, underdog favorite, etc.
   selectionTime: string | Date;
+  adminOverride?: boolean;
 }
 
 export interface WeekConfig {

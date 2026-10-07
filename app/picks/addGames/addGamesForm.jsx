@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CircularProgress, Fab } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
+import styles from "./addGamesForm.module.css";
 
 export default function AddGamesForm(props) {
   const [readyToSubmit, setReadyToSubmit] = useState(false);
@@ -43,8 +44,8 @@ export default function AddGamesForm(props) {
   }
 
   return (
-    <div>
-      <div>
+    <div className={styles.form}>
+      <div className={styles.header}>
         <h1>Add Games</h1>
         {readyToSubmit && (
           <Fab

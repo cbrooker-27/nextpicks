@@ -268,7 +268,7 @@ export async function addUserChoices(choices: UserChoice[]) {
   const operations = choices.map((choice) => ({
     updateOne: {
       filter: { gameId: choice.gameId, userId: choice.userId },
-      update: { $set: { choice: choice.choice, selectionTime: choice.selectionTime } },
+      update: { $set: { choice: choice.choice, selectionTime: choice.selectionTime, adminOverride: false } },
       upsert: true,
     },
   }));
