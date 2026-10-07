@@ -121,7 +121,8 @@ export default function AdminOverridePicks() {
         Admin Player Picks
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Record a pick for a player after a game has locked. The save time will be recorded and marked as an admin override.
+        Record a pick for a player after a game has locked. The save time will be recorded and marked as an admin
+        override.
       </Typography>
 
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 3, alignItems: "stretch" }}>
@@ -186,16 +187,18 @@ export default function AdminOverridePicks() {
         </Paper>
       )}
 
-      {status && <Alert severity={status.severity} sx={{ mb: 2 }}>{status.message}</Alert>}
+      {status && (
+        <Alert severity={status.severity} sx={{ mb: 2 }}>
+          {status.message}
+        </Alert>
+      )}
       {!isLoadingGames && games.length === 0 && period && !status && (
         <Typography color="text.secondary">Load the locked games for the selected player and week.</Typography>
       )}
       {games.length > 0 && (
         <FormControlLabel
           sx={{ mb: 1 }}
-          control={
-            <Switch checked={showPickedGames} onChange={(event) => setShowPickedGames(event.target.checked)} />
-          }
+          control={<Switch checked={showPickedGames} onChange={(event) => setShowPickedGames(event.target.checked)} />}
           label={`Show currently picked games (${pickedGameCount})`}
         />
       )}
@@ -206,25 +209,18 @@ export default function AdminOverridePicks() {
       )}
       {visibleGames.map((game) => (
         <Paper key={game.id} variant="outlined" sx={{ p: { xs: 1.5, sm: 2 }, mb: 1.5 }}>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1}
-            sx={{ mb: 1.5, justifyContent: "space-between" }}
-          >
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mb: 1.5, justifyContent: "space-between" }}>
             <Box>
               <Typography variant="h6" component="h3">
                 {game.awayName} at {game.homeName}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {new Date(game.startTime).toLocaleString()}{game.location ? ` · ${game.location}` : ""}
+                {new Date(game.startTime).toLocaleString()}
+                {game.location ? ` · ${game.location}` : ""}
               </Typography>
             </Box>
             {game.choice && (
-              <Chip
-                size="small"
-                color="primary"
-                label={`Current pick: ${choiceLabel(game, game.choice)}`}
-              />
+              <Chip size="small" color="primary" label={`Current pick: ${choiceLabel(game, game.choice)}`} />
             )}
             {draftChoices[game.id] && draftChoices[game.id] !== game.choice && (
               <Chip
