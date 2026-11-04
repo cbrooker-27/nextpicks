@@ -1,5 +1,6 @@
 "use server";
 import { getCurrentWeek } from "@/app/utils/db";
+import { recordTeamStatsRequest } from "@/app/lib/msfTeamStatsMetrics";
 
 function findTeam(team) {
   return team.abbreviation === this;
@@ -24,10 +25,20 @@ async function fetchFromMsf(url, headers) {
   try {
     const response = await fetch(url, { method: "GET", headers, signal: controller.signal });
     if (!response.ok) {
-      throw new Error(`MSF request failed with status ${response.status}`);
+      const error = new Error(`MSF request failed with status ${response.status}`);
+      error.name = "MsfHttpError";
+      error.status = response.status;
+      throw error;
     }
     const data = await response.json();
     return { response, data };
+  } catch (error) {
+    if (controller.signal.aborted) {
+      const timeoutError = new Error(`MSF request timed out after ${timeoutMs}ms`, { cause: error });
+      timeoutError.name = "TimeoutError";
+      throw timeoutError;
+    }
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
@@ -93,12 +104,19 @@ export async function getTeamStatisticsFromMsfWithStatus(week) {
   const msfUrl = `${process.env.MYSPORTSFEED_BASE_URL}${week.season}-${
     week.season + 1
   }-regular/standings.json?stats=W,L,T,PF,PA`;
-  console.log("msfURL:" + msfUrl);
-  const headers = getMSFHeaders();
-  if (process.env.DEV_MODE === "true") {
-    console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
-  }
+  const startedAt = Date.now();
+  const timeoutMs = Number(process.env.MSF_TIMEOUT_MS) || 10000;
+  const logContext = {
+    event: "msf_team_stats_request",
+    season: week.season,
+    timeoutMs,
+  };
+  console.info(JSON.stringify({ ...logContext, status: "started" }));
   try {
+    const headers = getMSFHeaders();
+    if (process.env.DEV_MODE === "true") {
+      console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
+    }
     const result = await fetchFromMsf(msfUrl, headers);
     const response = result.response;
     const resJson = result.data;
@@ -116,9 +134,47 @@ export async function getTeamStatisticsFromMsfWithStatus(week) {
         pointsAgainst: team.stats.standings.pointsAgainst,
       };
     });
+    console.info(
+      JSON.stringify({
+        ...logContext,
+        status: "success",
+        durationMs: Date.now() - startedAt,
+        httpStatus: response.status,
+        teamCount: simpleTeams.length,
+      }),
+    );
+    await recordTeamStatsRequest({
+      status: "success",
+      season: week.season,
+      durationMs: Date.now() - startedAt,
+      httpStatus: response.status,
+    });
     return { data: simpleTeams, source: "live" };
   } catch (error) {
-    console.error("Error fetching team statistics from MSF:", error);
+    const errorName = error instanceof Error ? error.name : typeof error;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const status = errorName === "TimeoutError" ? "timeout" : "error";
+    const durationMs = Date.now() - startedAt;
+    const httpStatus = error instanceof Error ? error.status : undefined;
+    console.error(
+      JSON.stringify({
+        ...logContext,
+        status,
+        durationMs,
+        httpStatus,
+        error: {
+          name: errorName,
+          message: errorMessage,
+        },
+      }),
+    );
+    await recordTeamStatsRequest({
+      status,
+      season: week.season,
+      durationMs,
+      httpStatus,
+      error: { name: errorName, message: errorMessage },
+    });
     return { data: [], source: "unavailable" };
   }
 }

@@ -114,6 +114,11 @@ export default function ResponsiveDrawer(props) {
           icon: People,
           target: "/admin/activeSeasons",
         },
+        {
+          itemname: "MSF Diagnostics",
+          icon: QueryStats,
+          target: "/admin/msfDiagnostics",
+        },
       ],
     },
     {
