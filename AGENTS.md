@@ -7,3 +7,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## React page and styling conventions
+
+- Keep route `page.jsx` and `page.tsx` files as thin wrappers that import and render the actual page component from a descriptively named sibling file. Route configuration exports may remain in the route file.
+- Put CSS in CSS files or CSS Modules, not in JSX/TSX. Inline `style` or `sx` styling is acceptable only when the object contains a single CSS property; move objects with multiple CSS properties into a stylesheet.
