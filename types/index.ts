@@ -16,6 +16,9 @@ export interface Game {
   startTime: string | Date;
   awayFavorite: boolean;
   spread: number;
+  location?: string;
+  venueId?: string | number;
+  venueAllegiance?: string;
   homeScore?: number;
   awayScore?: number;
   playedStatus?: string;

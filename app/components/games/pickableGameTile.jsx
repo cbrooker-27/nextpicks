@@ -8,6 +8,7 @@ import { Button, FormControlLabel, Switch } from "@mui/material";
 import LockIcon from "@mui/icons-material/Lock";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 export default function PickableGameTile({ game, index, choiceChanged, teamDetails, initialChoice }) {
   const [choice, setChoice] = useState(initialChoice || "");
@@ -40,6 +41,7 @@ export default function PickableGameTile({ game, index, choiceChanged, teamDetai
   }
   const startTime = new Date(game.startTime);
   const gameStarted = startTime <= new Date();
+  const neutralSite = isNeutralSiteGame(game);
   const pickLocked = gameStarted || (Boolean(initialChoice) && !editing);
   const handleChange = (event, newChoice) => {
     if (pickLocked) return;
@@ -58,6 +60,12 @@ export default function PickableGameTile({ game, index, choiceChanged, teamDetai
               Edit pick
             </Button>
           )}
+        </div>
+      )}
+      {neutralSite && (
+        <div className={cssStyles.neutralSiteBanner} role="note">
+          <WarningAmberIcon fontSize="small" />
+          Neutral site game{game.location ? ` · ${game.location}` : ""}
         </div>
       )}
       <div className={cssStyles.gamemain}>
@@ -116,4 +124,21 @@ export default function PickableGameTile({ game, index, choiceChanged, teamDetai
       </div>
     </div>
   );
+}
+
+function isNeutralSiteGame(game) {
+  const homeVenueId = game.home?.homeVenue?.id;
+  if (game.venueId != null && homeVenueId != null) {
+    return String(game.venueId) !== String(homeVenueId);
+  }
+
+  if (game.venueAllegiance) {
+    return game.venueAllegiance.toUpperCase() !== "HOME";
+  }
+
+  const normalizeVenue = (venue) =>
+    typeof venue === "string" ? venue.toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+  const gameVenue = normalizeVenue(game.location);
+  const homeVenue = normalizeVenue(game.home?.homeVenue?.name);
+  return Boolean(gameVenue && homeVenue && gameVenue !== homeVenue);
 }

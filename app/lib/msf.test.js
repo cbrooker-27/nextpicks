@@ -43,7 +43,8 @@ describe("msf.js", () => {
           startTime: "2025-09-07T13:00:00.000Z",
           awayTeam: { abbreviation: "PHI" },
           homeTeam: { abbreviation: "DAL" },
-          venue: { name: "AT&T Stadium" },
+          venue: { id: 44, name: "AT&T Stadium" },
+          venueAllegiance: "HOME",
           playedStatus: "COMPLETED",
         },
         score: {
@@ -58,7 +59,7 @@ describe("msf.js", () => {
     references: {
       teamReferences: [
         { abbreviation: "PHI", name: "Eagles" },
-        { abbreviation: "DAL", name: "Cowboys" },
+        { abbreviation: "DAL", name: "Cowboys", homeVenue: { id: 44, name: "AT&T Stadium" } },
       ],
     },
   };
@@ -82,6 +83,8 @@ describe("msf.js", () => {
     expect(games[0]._id).toBe(1);
     expect(games[0].homeScore).toBe(24);
     expect(games[0].home.name).toBe("Cowboys");
+    expect(games[0].venueId).toBe(44);
+    expect(games[0].venueAllegiance).toBe("HOME");
     expect(recordMsfRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         requestType: "games",

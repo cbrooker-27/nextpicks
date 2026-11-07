@@ -148,6 +148,8 @@ export async function getGamesForWeekFromMsfWithStatus(week) {
         away: teams.find(findTeam, game.schedule.awayTeam.abbreviation),
         home: teams.find(findTeam, game.schedule.homeTeam.abbreviation),
         location: game.schedule.venue.name,
+        venueId: game.schedule.venue.id,
+        venueAllegiance: game.schedule.venueAllegiance,
         homeScore: game.score.homeScoreTotal,
         awayScore: game.score.awayScoreTotal,
         playedStatus: game.schedule.playedStatus,

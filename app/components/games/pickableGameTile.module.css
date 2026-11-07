@@ -35,6 +35,19 @@
     padding: 2px 6px;
 }
 
+.neutralSiteBanner {
+    min-height: 32px;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background-color: #5b3b00;
+    color: #ffe08a;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
 .gamemain {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 65px minmax(0, 1fr);

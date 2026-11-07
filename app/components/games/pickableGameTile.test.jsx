@@ -74,4 +74,50 @@ describe("PickableGameTile", () => {
     expect(screen.getByText("Game started - pick locked")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "uu" })).toBeDisabled();
   });
+
+  it("warns when the game venue differs from the home team's stadium", () => {
+    const neutralSiteGame = {
+      ...mockGame,
+      venueId: 99,
+      home: { ...mockGame.home, homeVenue: { id: 2, name: "Cowboys Stadium" } },
+    };
+
+    render(
+      <PickableGameTile
+        game={neutralSiteGame}
+        index={0}
+        choiceChanged={jest.fn()}
+        teamDetails={mockTeamDetails}
+      />,
+    );
+
+    expect(screen.getByRole("note")).toHaveTextContent("Neutral site game · Test Stadium");
+  });
+
+  it("does not warn when played at the home team's stadium", () => {
+    const homeGame = {
+      ...mockGame,
+      venueId: 2,
+      home: { ...mockGame.home, homeVenue: { id: 2, name: "Test Stadium" } },
+    };
+
+    render(
+      <PickableGameTile game={homeGame} index={0} choiceChanged={jest.fn()} teamDetails={mockTeamDetails} />,
+    );
+
+    expect(screen.queryByText(/Neutral site game/)).not.toBeInTheDocument();
+  });
+
+  it("uses venue names for games without saved venue IDs", () => {
+    const legacyGame = {
+      ...mockGame,
+      home: { ...mockGame.home, homeVenue: { name: "Cowboys Stadium" } },
+    };
+
+    render(
+      <PickableGameTile game={legacyGame} index={0} choiceChanged={jest.fn()} teamDetails={mockTeamDetails} />,
+    );
+
+    expect(screen.getByRole("note")).toHaveTextContent("Neutral site game · Test Stadium");
+  });
 });
