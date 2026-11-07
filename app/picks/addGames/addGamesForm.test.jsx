@@ -10,7 +10,7 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn() }),
 }));
 
-jest.mock("../../components/games/addGameTile", () => function MockAddGameTile({ game, odds, spreadUpdated, index }) {
+jest.mock("../../components/games/addGameTile", () => function MockAddGameTile({ game, spreadUpdated, index }) {
   return (
     <div>
       <input
@@ -19,7 +19,6 @@ jest.mock("../../components/games/addGameTile", () => function MockAddGameTile({
         value={game.spread == null ? "" : game.spread - 0.5}
         onChange={(event) => spreadUpdated(index, event)}
       />
-      {odds && <span>{game.awayFavorite ? game.away.name : game.home.name} favored by {odds.spread}</span>}
     </div>
   );
 });
@@ -40,9 +39,10 @@ describe("AddGamesForm", () => {
       />,
     );
 
+    expect(screen.getByText("Home")).toBeInTheDocument();
+    expect(screen.getByText("Spread")).toBeInTheDocument();
+    expect(screen.getByText("Away")).toBeInTheDocument();
     expect(screen.getByLabelText("Spread")).toHaveValue(3);
-    expect(screen.getByText("Eagles favored by 3.9")).toBeInTheDocument();
-
     await act(async () => fireEvent.click(screen.getByRole("button", { name: /Add Games/ })));
     expect(addGames).toHaveBeenCalledWith([
       expect.objectContaining({ _id: 42, spread: 3.5, awayFavorite: true }),

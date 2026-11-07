@@ -91,6 +91,11 @@ export default function AddGamesForm(props) {
           </Fab>
         )}
       </div>
+      <div className={styles.columnHeaders} aria-hidden="true">
+        <span>Home</span>
+        <span>Spread</span>
+        <span>Away</span>
+      </div>
       {games.map((game, index) => (
         <AddGameTile
           game={game}
@@ -98,8 +103,6 @@ export default function AddGamesForm(props) {
           index={index}
           spreadUpdated={gameSpreadUpdated}
           favoriteUpdated={gameFavoriteUpdated}
-          teamDetails={props.teamDetails}
-          odds={props.gameSpreads[String(game._id)]}
         />
       ))}
     </div>

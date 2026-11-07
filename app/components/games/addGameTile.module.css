@@ -1,70 +1,100 @@
-.gametile{
-    border-radius: 8px;
-    border-style: solid;
-    border-color: blue;
-    border-width: 3px;
-    width: 100%;
-    max-width: 680px;
-    background-color: black;
-    color: white;
-    display: inline-block;
-    
-}
-
-.gameid {
-    font-size: small;
-    display: inline-block;
-    color: azure;
+.gametile {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 4em;
+  padding: 2px 8px;
+  border: 1px solid #234a74;
+  border-radius: 6px;
+  background: #101820;
+  color: white;
 }
 
 .teams {
-    background-color: inherit;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 88px minmax(0, 1fr);
-    align-items: center;
-    justify-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr);
+  align-items: center;
+  min-height: calc(4em - 6px);
+}
+
+.team {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.875rem;
+  line-height: 1.1;
+}
+
+.awayTeam {
+  justify-content: flex-end;
+}
+
+.logo {
+  flex: 0 0 3em;
+  width: 3em;
+  align-self: stretch;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.teamName {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.teamCity,
+.teamMascot {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teamMascot {
+  font-weight: 700;
 }
 
 .spread {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-width: 0;
-}
-.spread input{ 
-    width: 5rem;
-    height: 3rem;
-    background: black;
-    color: white;
-    font-size: x-large;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
 }
 
-.odds {
-    max-width: 120px;
-    margin-top: 4px;
-    color: greenyellow;
-    font-size: small;
-    text-align: center;
+.spread input {
+  box-sizing: border-box;
+  width: 48px;
+  height: 21px;
+  padding: 0 2px;
+  border: 1px solid #607d8b;
+  border-radius: 3px;
+  background: #080c10;
+  color: white;
+  font-size: 0.9rem;
+  line-height: 1;
+  text-align: center;
 }
 
-.favoriteToggle{ 
-    width: 3.5rem;
-    display: block
+.favoriteSwitch {
+  height: 18px;
 }
 
-.gameteam {
-    display: inline-block;
-    width: 200px;
-    height: 225px;
-    background-size: 200px;
-    background-repeat: no-repeat;
-    background-position: bottom;
-    color: white;
-}
+@media (max-width: 380px) {
+  .gametile {
+    padding-right: 4px;
+    padding-left: 4px;
+  }
 
-.gamelocation {
-    font-size: small;
-    text-align: center;
-    color: greenyellow;
+  .teams {
+    grid-template-columns: minmax(0, 1fr) 58px minmax(0, 1fr);
+  }
+
+  .team {
+    gap: 3px;
+    font-size: 0.75rem;
+  }
+
 }

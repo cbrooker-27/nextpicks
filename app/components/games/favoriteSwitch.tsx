@@ -6,14 +6,16 @@ interface StyledSwitchProps {
   theme?: any;
 };
 
-const StyledSwitch = styled(Switch)<StyledSwitchProps>(({game, theme}) => ({
-  width: 62,
-  height: 34,
-  padding: 7,
+const StyledSwitch = styled(Switch, {
+  shouldForwardProp: (prop) => prop !== "game",
+})<StyledSwitchProps>(({game, theme}) => ({
+  width: 40,
+  height: 18,
+  padding: 0,
   "& .MuiSwitch-switchBase": {
-    margin: 1,
+    margin: 0,
     padding: 0,
-    transform: "translateX(6px)",
+    transform: "translateX(0px)",
     "&.Mui-checked": {
       color: "#fff",
       transform: "translateX(22px)",
@@ -32,8 +34,8 @@ const StyledSwitch = styled(Switch)<StyledSwitchProps>(({game, theme}) => ({
   },
   "& .MuiSwitch-thumb": {
     backgroundColor: "#001e3c",
-    width: 32,
-    height: 32,
+    width: 18,
+    height: 18,
     "&::before": {
       content: "''",
       position: "absolute",
@@ -58,11 +60,12 @@ const StyledSwitch = styled(Switch)<StyledSwitchProps>(({game, theme}) => ({
   },
 }));
 
-export default function FavoriteSwitch({ game, gameIndex, favoriteUpdated }) {
+export default function FavoriteSwitch({ game, gameIndex, favoriteUpdated, favoriteName = "Favorite team" }) {
   return (
     <StyledSwitch
       game={game}
       checked={game.awayFavorite||false}
+      slotProps={{ input: { "aria-label": favoriteName } }}
       onChange={(event) => favoriteUpdated(gameIndex, event.target.checked)}
     />
   );

@@ -1,50 +1,54 @@
 import cssStyles from "./addGameTile.module.css";
-import TeamTile from "../teams/teamTile";
-import FormGroup from "@mui/material/FormGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
 import FavoriteSwitch from "./favoriteSwitch";
 
 export default function AddGameTile(props) {
-  const game = structuredClone(props.game);
-  const startTime = new Date(game.startTime);
-  game.home.stats = props.teamDetails.find((team) => team._id === game.home.id);
-  game.away.stats = props.teamDetails.find((team) => team._id === game.away.id);
+  const { game } = props;
+  const favoriteTeam = game.awayFavorite ? game.away : game.home;
 
   return (
     <div className={cssStyles.gametile}>
-      <div className={cssStyles.gameinfo}>
-        Week #{game.week} <p className={cssStyles.gameid}>{game._id}</p>
-      </div>
       <div className={cssStyles.teams}>
-        <TeamTile team={game.home} home />
+        <div className={cssStyles.team}>
+          <span
+            className={cssStyles.logo}
+            style={{ backgroundImage: `url('${game.home.officialLogoImageSrc}')` }}
+            aria-hidden="true"
+          />
+          <span className={cssStyles.teamName}>
+            <span className={cssStyles.teamCity}>{game.home.city}</span>
+            <span className={cssStyles.teamMascot}>{game.home.name}</span>
+          </span>
+        </div>
         <div className={cssStyles.spread}>
-          <label htmlFor={`spread-${game._id}`}>Spread</label>
           <input
             id={`spread-${game._id}`}
             type="number"
             min="0"
             step="1"
+            aria-label={`${game.home.name} versus ${game.away.name} spread`}
             value={game.spread == null ? "" : game.spread - 0.5}
             onChange={(event) => props.spreadUpdated(props.index, event)}
           />
-          {props.odds && (
-            <div className={cssStyles.odds}>
-              {game[props.odds.awayFavorite ? "away" : "home"].name} favored by {props.odds.spread}
-              {props.odds.source ? ` (${props.odds.source})` : ""}
-            </div>
-          )}
-          <FormGroup>
-            <FormControlLabel
-              control={<FavoriteSwitch game={game} gameIndex={props.index} favoriteUpdated={props.favoriteUpdated} />}
-              label="Favorite"
-              labelPlacement="top"
+          <div className={cssStyles.favoriteSwitch}>
+            <FavoriteSwitch
+              game={game}
+              gameIndex={props.index}
+              favoriteUpdated={props.favoriteUpdated}
+              favoriteName={`${favoriteTeam.city} ${favoriteTeam.name} favored`}
             />
-          </FormGroup>
+          </div>
         </div>
-        <TeamTile team={game.away} />
-      </div>
-      <div className={cssStyles.gamelocation}>
-        {game.location + " - " + startTime.toLocaleDateString() + " - " + startTime.toLocaleTimeString()}
+        <div className={`${cssStyles.team} ${cssStyles.awayTeam}`}>
+          <span
+            className={cssStyles.logo}
+            style={{ backgroundImage: `url('${game.away.officialLogoImageSrc}')` }}
+            aria-hidden="true"
+          />
+          <span className={cssStyles.teamName}>
+            <span className={cssStyles.teamCity}>{game.away.city}</span>
+            <span className={cssStyles.teamMascot}>{game.away.name}</span>
+          </span>
+        </div>
       </div>
     </div>
   );
