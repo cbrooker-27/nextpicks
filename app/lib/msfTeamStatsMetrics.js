@@ -3,7 +3,7 @@ import { connectToDatabase } from "@/app/utils/db";
 const METRICS_ID = "msf_team_stats";
 const RECENT_FAILURE_LIMIT = 50;
 
-export async function recordTeamStatsRequest({ status, season, durationMs, httpStatus, error }) {
+export async function recordMsfRequest({ requestType, status, season, week, durationMs, httpStatus, error }) {
   const completedAt = new Date();
   const countField =
     status === "success" ? "successCount" : status === "timeout" ? "timeoutCount" : "errorCount";
@@ -28,12 +28,14 @@ export async function recordTeamStatsRequest({ status, season, durationMs, httpS
         $each: [
           {
             at: completedAt,
+            requestType,
             season,
+            ...(week === undefined ? {} : { week }),
             status,
             durationMs,
             httpStatus,
-            errorName: error.name,
-            message: error.message,
+            errorName: error?.name || "UnknownError",
+            message: error?.message || "Unknown MSF request failure",
           },
         ],
         $slice: -RECENT_FAILURE_LIMIT,
@@ -52,7 +54,7 @@ export async function recordTeamStatsRequest({ status, season, durationMs, httpS
       await client.close();
     }
   } catch (persistenceError) {
-    console.error("Unable to persist MSF team statistics metrics:", persistenceError);
+    console.error("Unable to persist MSF request metrics:", persistenceError);
   }
 }
 

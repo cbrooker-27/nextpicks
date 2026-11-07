@@ -23,10 +23,10 @@ export default async function MsfDiagnosticsPage() {
   return (
     <Box sx={{ maxWidth: 1100, mx: "auto", p: { xs: 2, sm: 4 } }}>
       <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
-        MSF Team Records Diagnostics
+        MSF Request Diagnostics
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Production request totals are stored in MongoDB. Individual failures are retained here up to the most recent 50.
+        Production request totals are stored in MongoDB. Individual MSF failures are retained here up to the most recent 50.
       </Typography>
 
       <Box
@@ -48,15 +48,17 @@ export default async function MsfDiagnosticsPage() {
         Recent failures
       </Typography>
       {failures.length === 0 ? (
-        <Alert severity="success">No team-record request failures have been recorded.</Alert>
+        <Alert severity="success">No MSF request failures have been recorded.</Alert>
       ) : (
         <TableContainer component={Paper} variant="outlined">
           <Table size="small" aria-label="Recent MSF team-record failures">
             <TableHead>
               <TableRow>
                 <TableCell>Time</TableCell>
+                <TableCell>Request</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Season</TableCell>
+                <TableCell>Week</TableCell>
                 <TableCell>Duration</TableCell>
                 <TableCell>HTTP</TableCell>
                 <TableCell>Error</TableCell>
@@ -66,8 +68,10 @@ export default async function MsfDiagnosticsPage() {
               {failures.map((failure, index) => (
                 <TableRow key={`${failure.at}-${index}`}>
                   <TableCell>{dateFormatter.format(new Date(failure.at))}</TableCell>
+                  <TableCell>{failure.requestType === "games" ? "Games" : "Team statistics"}</TableCell>
                   <TableCell>{failure.status}</TableCell>
                   <TableCell>{failure.season}</TableCell>
+                  <TableCell>{failure.week ?? "—"}</TableCell>
                   <TableCell>{numberFormatter.format(failure.durationMs)} ms</TableCell>
                   <TableCell>{failure.httpStatus || "—"}</TableCell>
                   <TableCell>{`${failure.errorName}: ${failure.message}`}</TableCell>

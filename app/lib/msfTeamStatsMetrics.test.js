@@ -1,12 +1,12 @@
 /** @jest-environment node */
 import { connectToDatabase } from "@/app/utils/db";
-import { getTeamStatsMetrics, recordTeamStatsRequest } from "./msfTeamStatsMetrics";
+import { getTeamStatsMetrics, recordMsfRequest } from "./msfTeamStatsMetrics";
 
 jest.mock("@/app/utils/db", () => ({
   connectToDatabase: jest.fn(),
 }));
 
-describe("MSF team statistics metrics", () => {
+describe("MSF request metrics", () => {
   let updateOne;
   let findOne;
   let close;
@@ -27,7 +27,8 @@ describe("MSF team statistics metrics", () => {
   });
 
   it("increments the successful request totals", async () => {
-    await recordTeamStatsRequest({
+    await recordMsfRequest({
+      requestType: "team_stats",
       status: "success",
       season: 2026,
       durationMs: 120,
@@ -50,9 +51,11 @@ describe("MSF team statistics metrics", () => {
   });
 
   it("increments timeout totals and retains the failure details", async () => {
-    await recordTeamStatsRequest({
+    await recordMsfRequest({
+      requestType: "games",
       status: "timeout",
       season: 2026,
+      week: 3,
       durationMs: 10000,
       error: { name: "TimeoutError", message: "Request timed out" },
     });
@@ -65,7 +68,9 @@ describe("MSF team statistics metrics", () => {
           recentFailures: {
             $each: [
               expect.objectContaining({
+                requestType: "games",
                 season: 2026,
+                week: 3,
                 status: "timeout",
                 errorName: "TimeoutError",
                 message: "Request timed out",
@@ -97,7 +102,8 @@ describe("MSF team statistics metrics", () => {
     connectToDatabase.mockRejectedValueOnce(new Error("Mongo unavailable"));
 
     await expect(
-      recordTeamStatsRequest({
+      recordMsfRequest({
+        requestType: "games",
         status: "error",
         season: 2026,
         durationMs: 100,
@@ -106,7 +112,7 @@ describe("MSF team statistics metrics", () => {
     ).resolves.toBeUndefined();
 
     expect(error).toHaveBeenCalledWith(
-      "Unable to persist MSF team statistics metrics:",
+      "Unable to persist MSF request metrics:",
       expect.objectContaining({ message: "Mongo unavailable" }),
     );
     error.mockRestore();

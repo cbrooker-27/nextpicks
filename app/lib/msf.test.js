@@ -5,13 +5,14 @@ import {
   getThisWeeksGamesFromMsf,
 } from "./msf";
 import * as dbUtils from "@/app/utils/db";
+import { recordMsfRequest } from "@/app/lib/msfTeamStatsMetrics";
 
 jest.mock("@/app/utils/db", () => ({
   getCurrentWeek: jest.fn(),
 }));
 
 jest.mock("@/app/lib/msfTeamStatsMetrics", () => ({
-  recordTeamStatsRequest: jest.fn().mockResolvedValue(undefined),
+  recordMsfRequest: jest.fn().mockResolvedValue(undefined),
 }));
 
 global.fetch = jest.fn();
@@ -80,6 +81,15 @@ describe("msf.js", () => {
     expect(games[0]._id).toBe(1);
     expect(games[0].homeScore).toBe(24);
     expect(games[0].home.name).toBe("Cowboys");
+    expect(recordMsfRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestType: "games",
+        status: "success",
+        season: 2025,
+        week: 1,
+        httpStatus: 200,
+      }),
+    );
   });
 
   it("getThisWeeksGamesFromMsf uses getCurrentWeek", async () => {
@@ -149,7 +159,7 @@ describe("msf.js", () => {
       event: "msf_team_stats_request",
       status: "success",
       httpStatus: 200,
-      teamCount: 1,
+      resultCount: 1,
     });
     info.mockRestore();
   });
@@ -162,7 +172,7 @@ describe("msf.js", () => {
     }));
     process.env.MSF_TIMEOUT_MS = "1";
 
-    await expect(getTeamStatisticsFromMsfWithStatus({ season: 2025 })).resolves.toMatchObject({
+    await expect(getTeamStatisticsFromMsfWithStatus({ season: 2025, week: 4 })).resolves.toMatchObject({
       data: [],
       source: "unavailable",
     });
@@ -177,8 +187,36 @@ describe("msf.js", () => {
       status: "timeout",
       error: { name: "TimeoutError" },
     });
+    expect(recordMsfRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestType: "team_stats",
+        season: 2025,
+        week: 4,
+        status: "timeout",
+        error: expect.objectContaining({ name: "TimeoutError" }),
+      }),
+    );
     info.mockRestore();
     error.mockRestore();
+  });
+
+  it("caps the team statistics timeout below the Vercel function deadline", async () => {
+    const info = jest.spyOn(console, "info").mockImplementation(() => {});
+    process.env.MSF_TIMEOUT_MS = "30000";
+    fetch.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      json: async () => ({ teams: [] }),
+    });
+
+    await getTeamStatisticsFromMsfWithStatus({ season: 2025, week: 4 });
+
+    expect(JSON.parse(info.mock.calls[0][0])).toMatchObject({
+      event: "msf_team_stats_request",
+      timeoutMs: 7000,
+      status: "started",
+    });
+    info.mockRestore();
   });
 
   it("logs HTTP errors with their status code", async () => {
@@ -201,6 +239,7 @@ describe("msf.js", () => {
   });
 
   it("returns no games when the MSF request is aborted", async () => {
+    const error = jest.spyOn(console, "error").mockImplementation(() => {});
     fetch.mockImplementationOnce((_url, options) => {
       options.signal.addEventListener("abort", () => {});
       return new Promise((_resolve, reject) => {
@@ -211,11 +250,32 @@ describe("msf.js", () => {
     process.env.MSF_TIMEOUT_MS = "1";
 
     await expect(getGamesForWeekFromMsf({ season: 2025, week: 1 })).resolves.toEqual([]);
+    expect(recordMsfRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestType: "games",
+        status: "timeout",
+        season: 2025,
+        week: 1,
+        error: expect.objectContaining({ name: "TimeoutError" }),
+      }),
+    );
+    error.mockRestore();
   });
 
   it("returns no games when the MSF request fails", async () => {
+    const error = jest.spyOn(console, "error").mockImplementation(() => {});
     fetch.mockRejectedValueOnce(new Error("MSF unavailable"));
 
     await expect(getGamesForWeekFromMsf({ season: 2025, week: 1 })).resolves.toEqual([]);
+    expect(recordMsfRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestType: "games",
+        status: "error",
+        season: 2025,
+        week: 1,
+        error: expect.objectContaining({ message: "MSF unavailable" }),
+      }),
+    );
+    error.mockRestore();
   });
 });

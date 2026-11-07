@@ -1,6 +1,8 @@
 "use server";
 import { getCurrentWeek } from "@/app/utils/db";
-import { recordTeamStatsRequest } from "@/app/lib/msfTeamStatsMetrics";
+import { recordMsfRequest } from "@/app/lib/msfTeamStatsMetrics";
+
+const MAX_MSF_TIMEOUT_MS = 7000;
 
 function findTeam(team) {
   return team.abbreviation === this;
@@ -17,9 +19,17 @@ function getMSFHeaders() {
   return headers;
 }
 
+function getMsfTimeoutMs() {
+  const configuredTimeoutMs = Number(process.env.MSF_TIMEOUT_MS);
+  if (!Number.isFinite(configuredTimeoutMs) || configuredTimeoutMs <= 0) {
+    return MAX_MSF_TIMEOUT_MS;
+  }
+  return Math.min(configuredTimeoutMs, MAX_MSF_TIMEOUT_MS);
+}
+
 async function fetchFromMsf(url, headers) {
   const controller = new AbortController();
-  const timeoutMs = Number(process.env.MSF_TIMEOUT_MS) || 10000;
+  const timeoutMs = getMsfTimeoutMs();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
@@ -44,27 +54,86 @@ async function fetchFromMsf(url, headers) {
   }
 }
 
-export async function getGamesForWeekFromMsfWithStatus(week) {
-  const msfUrl =
-    "" +
-    process.env.MYSPORTSFEED_BASE_URL +
-    week.season +
-    "-" +
-    (week.season + 1) +
-    "-regular" +
-    // "current" + doesn't work in the offseason
-    "/week/" +
-    week.week +
-    "/games.json";
-  // console.log("msfURL:" + msfUrl);
-  const headers = getMSFHeaders();
-  if (process.env.DEV_MODE === "true") {
-    console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
+async function logMsfRequest({ requestType, week, startedAt, status, httpStatus, error, resultCount }) {
+  const durationMs = Date.now() - startedAt;
+  const logContext = {
+    event: `msf_${requestType}_request`,
+    season: week.season,
+    week: week.week,
+  };
+  if (status === "success") {
+    console.info(
+      JSON.stringify({
+        ...logContext,
+        status,
+        durationMs,
+        httpStatus,
+        resultCount,
+      }),
+    );
+  } else {
+    const errorName = error instanceof Error ? error.name : typeof error;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(
+      JSON.stringify({
+        ...logContext,
+        status,
+        durationMs,
+        httpStatus,
+        error: {
+          name: errorName,
+          message: errorMessage,
+        },
+      }),
+    );
   }
-  let response;
+  await recordMsfRequest({
+    requestType,
+    status,
+    season: week.season,
+    week: week.week,
+    durationMs,
+    httpStatus,
+    error:
+      status === "success"
+        ? undefined
+        : {
+            name: error instanceof Error ? error.name : typeof error,
+            message: error instanceof Error ? error.message : String(error),
+          },
+  });
+}
+
+export async function getGamesForWeekFromMsfWithStatus(week) {
+  const startedAt = Date.now();
+  const timeoutMs = getMsfTimeoutMs();
+  console.info(
+    JSON.stringify({
+      event: "msf_games_request",
+      season: week.season,
+      week: week.week,
+      timeoutMs,
+      status: "started",
+    }),
+  );
   try {
+    const msfUrl =
+      "" +
+      process.env.MYSPORTSFEED_BASE_URL +
+      week.season +
+      "-" +
+      (week.season + 1) +
+      "-regular" +
+      // "current" + doesn't work in the offseason
+      "/week/" +
+      week.week +
+      "/games.json";
+    const headers = getMSFHeaders();
+    if (process.env.DEV_MODE === "true") {
+      console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
+    }
     const result = await fetchFromMsf(msfUrl, headers);
-    response = result.response;
+    const response = result.response;
     const resJson = result.data;
     if (process.env.DEV_MODE === "true") {
       console.log(`[EXTERNAL_CALL] Return Code: ${response.status}`);
@@ -88,9 +157,26 @@ export async function getGamesForWeekFromMsfWithStatus(week) {
       };
     });
     simpleGames.sort((a, b) => a._id - b._id);
+    await logMsfRequest({
+      requestType: "games",
+      week,
+      startedAt,
+      status: "success",
+      httpStatus: response.status,
+      resultCount: simpleGames.length,
+    });
     return { data: simpleGames, source: "live" };
   } catch (error) {
     console.error("Error fetching games from MSF:", error);
+    const status = error instanceof Error && error.name === "TimeoutError" ? "timeout" : "error";
+    await logMsfRequest({
+      requestType: "games",
+      week,
+      startedAt,
+      status,
+      httpStatus: error instanceof Error ? error.status : undefined,
+      error,
+    });
     return { data: [], source: "unavailable" };
   }
 }
@@ -101,18 +187,19 @@ export async function getGamesForWeekFromMsf(week) {
 }
 
 export async function getTeamStatisticsFromMsfWithStatus(week) {
-  const msfUrl = `${process.env.MYSPORTSFEED_BASE_URL}${week.season}-${
-    week.season + 1
-  }-regular/standings.json?stats=W,L,T,PF,PA`;
   const startedAt = Date.now();
-  const timeoutMs = Number(process.env.MSF_TIMEOUT_MS) || 10000;
+  const timeoutMs = getMsfTimeoutMs();
   const logContext = {
     event: "msf_team_stats_request",
     season: week.season,
+    week: week.week,
     timeoutMs,
   };
   console.info(JSON.stringify({ ...logContext, status: "started" }));
   try {
+    const msfUrl = `${process.env.MYSPORTSFEED_BASE_URL}${week.season}-${
+      week.season + 1
+    }-regular/standings.json?stats=W,L,T,PF,PA`;
     const headers = getMSFHeaders();
     if (process.env.DEV_MODE === "true") {
       console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
@@ -134,46 +221,24 @@ export async function getTeamStatisticsFromMsfWithStatus(week) {
         pointsAgainst: team.stats.standings.pointsAgainst,
       };
     });
-    console.info(
-      JSON.stringify({
-        ...logContext,
-        status: "success",
-        durationMs: Date.now() - startedAt,
-        httpStatus: response.status,
-        teamCount: simpleTeams.length,
-      }),
-    );
-    await recordTeamStatsRequest({
+    await logMsfRequest({
+      requestType: "team_stats",
+      week,
+      startedAt,
       status: "success",
-      season: week.season,
-      durationMs: Date.now() - startedAt,
       httpStatus: response.status,
+      resultCount: simpleTeams.length,
     });
     return { data: simpleTeams, source: "live" };
   } catch (error) {
-    const errorName = error instanceof Error ? error.name : typeof error;
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const status = errorName === "TimeoutError" ? "timeout" : "error";
-    const durationMs = Date.now() - startedAt;
-    const httpStatus = error instanceof Error ? error.status : undefined;
-    console.error(
-      JSON.stringify({
-        ...logContext,
-        status,
-        durationMs,
-        httpStatus,
-        error: {
-          name: errorName,
-          message: errorMessage,
-        },
-      }),
-    );
-    await recordTeamStatsRequest({
+    const status = error instanceof Error && error.name === "TimeoutError" ? "timeout" : "error";
+    await logMsfRequest({
+      requestType: "team_stats",
+      week,
+      startedAt,
       status,
-      season: week.season,
-      durationMs,
-      httpStatus,
-      error: { name: errorName, message: errorMessage },
+      httpStatus: error instanceof Error ? error.status : undefined,
+      error,
     });
     return { data: [], source: "unavailable" };
   }
