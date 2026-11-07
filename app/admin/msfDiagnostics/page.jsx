@@ -68,7 +68,13 @@ export default async function MsfDiagnosticsPage() {
               {failures.map((failure, index) => (
                 <TableRow key={`${failure.at}-${index}`}>
                   <TableCell>{dateFormatter.format(new Date(failure.at))}</TableCell>
-                  <TableCell>{failure.requestType === "games" ? "Games" : "Team statistics"}</TableCell>
+                  <TableCell>
+                    {failure.requestType === "games"
+                      ? "Games"
+                      : failure.requestType === "odds"
+                        ? "Odds"
+                        : "Team statistics"}
+                  </TableCell>
                   <TableCell>{failure.status}</TableCell>
                   <TableCell>{failure.season}</TableCell>
                   <TableCell>{failure.week ?? "—"}</TableCell>

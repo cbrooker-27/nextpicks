@@ -40,6 +40,14 @@
     font-size: x-large;
 }
 
+.odds {
+    max-width: 120px;
+    margin-top: 4px;
+    color: greenyellow;
+    font-size: small;
+    text-align: center;
+}
+
 .favoriteToggle{ 
     width: 3.5rem;
     display: block

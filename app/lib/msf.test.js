@@ -1,4 +1,5 @@
 import {
+  getGameSpreadsFromMsfWithStatus,
   getGamesForWeekFromMsf,
   getTeamStatisticsFromMsf,
   getTeamStatisticsFromMsfWithStatus,
@@ -235,6 +236,98 @@ describe("msf.js", () => {
       httpStatus: 503,
       error: { name: "MsfHttpError", message: "MSF request failed with status 503" },
     });
+    error.mockRestore();
+  });
+
+  it("uses the latest full-game spread to return each game's favorite and spread", async () => {
+    fetch.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      json: async () => ({
+        gameLines: [
+          {
+            game: { id: 21 },
+            lines: [
+              {
+                source: { name: "BetOnline" },
+                pointSpreads: [
+                  {
+                    asOfTime: "2025-09-01T10:00:00.000Z",
+                    pointSpread: {
+                      gameSegment: "FULL",
+                      awaySpread: -2.5,
+                      homeSpread: 2.5,
+                      awayLine: { american: -110 },
+                      homeLine: { american: -110 },
+                    },
+                  },
+                  {
+                    asOfTime: "2025-09-02T10:00:00.000Z",
+                    pointSpread: {
+                      gameSegment: "FIRST_HALF",
+                      awaySpread: -4.5,
+                      homeSpread: 4.5,
+                    },
+                  },
+                  {
+                    asOfTime: "2025-09-03T10:00:00.000Z",
+                    pointSpread: {
+                      gameSegment: "FULL",
+                      awaySpread: -3.5,
+                      homeSpread: 3.5,
+                      awayLine: { american: -110 },
+                      homeLine: { american: -110 },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    await expect(getGameSpreadsFromMsfWithStatus({ season: 2025, week: 1 })).resolves.toMatchObject({
+      source: "live",
+      data: {
+        "21": {
+          spread: 3.5,
+          awayFavorite: true,
+          source: "BetOnline",
+        },
+      },
+    });
+
+    expect(fetch).toHaveBeenCalledWith(
+      "https://api.mysportsfeeds.com/v2.1/pull/nfl/2025-2026-regular/week/1/odds_gamelines.json?force=true",
+      expect.objectContaining({ method: "GET" }),
+    );
+    expect(recordMsfRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestType: "odds",
+        status: "success",
+        season: 2025,
+        week: 1,
+        httpStatus: 200,
+      }),
+    );
+  });
+
+  it("returns no spreads when the odds feed is unavailable", async () => {
+    const error = jest.spyOn(console, "error").mockImplementation(() => {});
+    fetch.mockResolvedValueOnce({ status: 503, ok: false });
+
+    await expect(getGameSpreadsFromMsfWithStatus({ season: 2025, week: 1 })).resolves.toMatchObject({
+      data: {},
+      source: "unavailable",
+    });
+    expect(recordMsfRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestType: "odds",
+        status: "error",
+        httpStatus: 503,
+      }),
+    );
     error.mockRestore();
   });
 

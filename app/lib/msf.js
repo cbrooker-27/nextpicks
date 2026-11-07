@@ -248,3 +248,135 @@ export async function getTeamStatisticsFromMsf(week) {
   const result = await getTeamStatisticsFromMsfWithStatus(week);
   return result.data;
 }
+
+function getNumericLine(line) {
+  if (line === null || line === undefined || line === "") {
+    return null;
+  }
+  const value = typeof line === "number" ? line : Number(line);
+  return Number.isFinite(value) ? value : null;
+}
+
+function getGameSpread(gameLines) {
+  let latestSpread = null;
+
+  for (const gameLine of gameLines) {
+    for (const source of gameLine.lines || []) {
+      for (const lineEntry of source.pointSpreads || []) {
+        const pointSpread = lineEntry.pointSpread || lineEntry;
+        if (pointSpread.gameSegment !== "FULL") {
+          continue;
+        }
+
+        const awaySpread = getNumericLine(pointSpread.awaySpread ?? pointSpread.awayLine);
+        const homeSpread = getNumericLine(pointSpread.homeSpread ?? pointSpread.homeLine);
+        if (awaySpread === null && homeSpread === null) {
+          continue;
+        }
+
+        let awayFavorite;
+        if (awaySpread !== null && homeSpread !== null) {
+          if (awaySpread === homeSpread) {
+            continue;
+          }
+          awayFavorite = awaySpread < homeSpread;
+        } else if (awaySpread !== null) {
+          if (awaySpread === 0) {
+            continue;
+          }
+          awayFavorite = awaySpread < 0;
+        } else {
+          if (homeSpread === 0) {
+            continue;
+          }
+          awayFavorite = homeSpread > 0;
+        }
+
+        const asOfTime = Date.parse(lineEntry.asOfTime || pointSpread.asOfTime);
+        if (!Number.isFinite(asOfTime)) {
+          continue;
+        }
+        if (latestSpread && asOfTime <= latestSpread.asOfTime) {
+          continue;
+        }
+
+        latestSpread = {
+          spread: Math.max(Math.abs(awaySpread || 0), Math.abs(homeSpread || 0)),
+          awayFavorite,
+          source: source.source?.name || source.source?.abbreviation || null,
+          asOfTime,
+        };
+      }
+    }
+  }
+
+  if (!latestSpread) {
+    return null;
+  }
+
+  const { asOfTime, ...spread } = latestSpread;
+  return spread;
+}
+
+export async function getGameSpreadsFromMsfWithStatus(week) {
+  const startedAt = Date.now();
+  const timeoutMs = getMsfTimeoutMs();
+  console.info(
+    JSON.stringify({
+      event: "msf_odds_request",
+      season: week.season,
+      week: week.week,
+      timeoutMs,
+      status: "started",
+    }),
+  );
+
+  try {
+    const msfUrl = `${process.env.MYSPORTSFEED_BASE_URL}${week.season}-${
+      week.season + 1
+    }-regular/week/${week.week}/odds_gamelines.json?force=true`;
+    const headers = getMSFHeaders();
+    if (process.env.DEV_MODE === "true") {
+      console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
+    }
+
+    const result = await fetchFromMsf(msfUrl, headers);
+    const spreadsByGameId = {};
+    for (const gameLine of result.data.gameLines || []) {
+      const gameId = gameLine.game?.id;
+      if (gameId === undefined || gameId === null) {
+        continue;
+      }
+      const spread = getGameSpread([gameLine]);
+      if (spread) {
+        spreadsByGameId[String(gameId)] = spread;
+      }
+    }
+
+    await logMsfRequest({
+      requestType: "odds",
+      week,
+      startedAt,
+      status: "success",
+      httpStatus: result.response.status,
+      resultCount: Object.keys(spreadsByGameId).length,
+    });
+    return { data: spreadsByGameId, source: "live" };
+  } catch (error) {
+    const status = error instanceof Error && error.name === "TimeoutError" ? "timeout" : "error";
+    await logMsfRequest({
+      requestType: "odds",
+      week,
+      startedAt,
+      status,
+      httpStatus: error instanceof Error ? error.status : undefined,
+      error,
+    });
+    return { data: {}, source: "unavailable" };
+  }
+}
+
+export async function getGameSpreadsFromMsf(week) {
+  const result = await getGameSpreadsFromMsfWithStatus(week);
+  return result.data;
+}

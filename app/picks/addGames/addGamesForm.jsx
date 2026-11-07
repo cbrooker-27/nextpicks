@@ -7,10 +7,28 @@ import { Add } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import styles from "./addGamesForm.module.css";
 
+function getStoredSpread(value) {
+  const parsedSpread = Number(value);
+  if (!Number.isFinite(parsedSpread)) {
+    return null;
+  }
+  const roundedSpread = Math.floor(parsedSpread);
+  return (roundedSpread < 2 ? 0 : roundedSpread) + 0.5;
+}
+
 export default function AddGamesForm(props) {
-  const [readyToSubmit, setReadyToSubmit] = useState(false);
+  const [games, setGames] = useState(() =>
+    props.games.map((game) => {
+      const odds = props.gameSpreads[String(game._id)];
+      return odds
+        ? { ...game, spread: getStoredSpread(odds.spread), awayFavorite: odds.awayFavorite }
+        : { ...game, spread: game.spread ?? null, awayFavorite: game.awayFavorite ?? false };
+    }),
+  );
+  const [readyToSubmit, setReadyToSubmit] = useState(
+    () => games.length > 0 && games.every((game) => game.spread != null),
+  );
   const [submitting, setSubmitting] = useState(false);
-  const [games, setGames] = useState(props.games);
   const router = useRouter();
 
   function emptySpread(game) {
@@ -28,19 +46,19 @@ export default function AddGamesForm(props) {
   }
 
   function gameSpreadUpdated(index, event) {
-    const updatedGames = [...games];
-    console.log("updating game", index, "with spread", event.target.value);
-    updatedGames[index].spread = event.target.value ? parseInt(event.target.value) + 0.5 : null;
-    const anyEmptySpreads = updatedGames.find(emptySpread);
-    anyEmptySpreads ? setReadyToSubmit(false) : setReadyToSubmit(true);
+    const spread = event.target.value === "" ? null : getStoredSpread(event.target.value);
+    const updatedGames = games.map((game, gameIndex) =>
+      gameIndex === index ? { ...game, spread } : game,
+    );
+    const anyEmptySpreads = updatedGames.some(emptySpread);
+    setReadyToSubmit(updatedGames.length > 0 && !anyEmptySpreads);
     setGames(updatedGames);
   }
 
   function gameFavoriteUpdated(index, awayFavorite) {
-    const updatedGames = [...games];
-    console.log("updating game", index, "awayFavorite", awayFavorite);
-    updatedGames[index].awayFavorite = awayFavorite;
-    setGames(updatedGames);
+    setGames(games.map((game, gameIndex) =>
+      gameIndex === index ? { ...game, awayFavorite } : game,
+    ));
   }
 
   return (
@@ -81,6 +99,7 @@ export default function AddGamesForm(props) {
           spreadUpdated={gameSpreadUpdated}
           favoriteUpdated={gameFavoriteUpdated}
           teamDetails={props.teamDetails}
+          odds={props.gameSpreads[String(game._id)]}
         />
       ))}
     </div>

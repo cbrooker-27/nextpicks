@@ -18,7 +18,21 @@ export default function AddGameTile(props) {
       <div className={cssStyles.teams}>
         <TeamTile team={game.home} home />
         <div className={cssStyles.spread}>
-          <input type="number" onChange={(event) => props.spreadUpdated(props.index, event)}></input>
+          <label htmlFor={`spread-${game._id}`}>Spread</label>
+          <input
+            id={`spread-${game._id}`}
+            type="number"
+            min="0"
+            step="1"
+            value={game.spread == null ? "" : game.spread - 0.5}
+            onChange={(event) => props.spreadUpdated(props.index, event)}
+          />
+          {props.odds && (
+            <div className={cssStyles.odds}>
+              {game[props.odds.awayFavorite ? "away" : "home"].name} favored by {props.odds.spread}
+              {props.odds.source ? ` (${props.odds.source})` : ""}
+            </div>
+          )}
           <FormGroup>
             <FormControlLabel
               control={<FavoriteSwitch game={game} gameIndex={props.index} favoriteUpdated={props.favoriteUpdated} />}
