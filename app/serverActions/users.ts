@@ -4,10 +4,12 @@ import { getPickedGames, getThisYearsActiveUsers, getAllPickedGames } from "@/ap
 export async function getUserStatsForStandings(week: { week: number; season: number; },includeCurrentWeek: boolean) {
   const activeUsers = JSON.parse(await getThisYearsActiveUsers());
 
-  activeUsers.forEach((user: { totalPoints: number; points: number[]; }) => {
+  activeUsers.forEach((user: { totalPoints: number; points: number[]; adminPoints: number; hasAdminPicks: boolean }) => {
     user.totalPoints = 0;
     user.points = [];
     user.points[0] = 0;
+    user.adminPoints = 0;
+    user.hasAdminPicks = false;
   });
 
   const allPickedGames = JSON.parse(await getAllPickedGames(week.season));
@@ -24,6 +26,7 @@ export async function getUserStatsForStandings(week: { week: number; season: num
       user["week" + i] = 0;
       user["weekLive" + i] = 0;
       user["possiblePoints" + i] = 0;
+      user["adminPointsWeek" + i] = 0;
     });
 
     allPickedGames.filter((game: { week: number; }) => game.week === i).map((game: { _id: any; awayScore: any; homeScore: any; playedStatus: string; awayFavorite: any; spread: number; userChoices: any[]; }) => {
@@ -55,10 +58,18 @@ export async function getUserStatsForStandings(week: { week: number; season: num
       }
       activeUsers.forEach((user: { [x: string]: any; name: any; totalPoints: any; }) => {
         const userChoice = game.userChoices.find((choice: { userId: any; }) => choice.userId === user.name);
+        if (userChoice?.adminOverride === true) {
+          user.hasAdminPicks = true;
+        }
 
         if (game.playedStatus.startsWith("COMPLETED")) {
-          user["week" + i] += gamePoints[userChoice?.choice] || 0;
-          user.totalPoints += gamePoints[userChoice?.choice] || 0;
+          const points = gamePoints[userChoice?.choice] || 0;
+          user["week" + i] += points;
+          user.totalPoints += points;
+          if (userChoice?.adminOverride === true) {
+            user["adminPointsWeek" + i] += points;
+            user.adminPoints += points;
+          }
           user["possiblePoints"+i] += 2;
         } else if (game.playedStatus === "LIVE") {
           user["weekLive" + i] += gamePoints[userChoice?.choice] || 0;

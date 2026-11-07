@@ -24,7 +24,7 @@ import {
   AccordionSummary,
 } from "@mui/material";
 import { SmartToy, CheckCircleOutlined, CancelOutlined, RemoveCircleOutlined, ExpandMore } from "@mui/icons-material";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { SeasonStatisticsContext } from "@/app/context/SeasonStatistics";
 
@@ -44,6 +44,7 @@ export default function ViewPicks() {
   const [activeUsers, setActiveUsers] = useState([]);
   const [showInProgress, setShowInProgress] = useState(true);
   const [includeNpc, setIncludeNpc] = useState(true);
+  const [includeAdminPicks, setIncludeAdminPicks] = useState(true);
   const [teamDetails, setTeamDetails] = useState([]);
   const [seasonData, setSeasonData] = useState([]);
   const [week, setWeek] = useState(null);
@@ -191,7 +192,25 @@ export default function ViewPicks() {
     return () => clearInterval(timer);
   }, [allCallsResolved, hasFailedCalls]);
 
-  updateUserPoints(pickedGames, gamesWithScores, activeUsers);
+  const scoredUsers = useMemo(
+    () => calculateUserPoints(pickedGames, gamesWithScores, activeUsers),
+    [pickedGames, gamesWithScores, activeUsers],
+  );
+  const hasAdminPicks = pickedGames.some((game) => game.userChoices?.some((choice) => choice.adminOverride === true));
+  const rankedUsers = scoredUsers
+    .map((user) => ({
+      ...user,
+      displayPoints: user.points - (includeAdminPicks ? 0 : user.adminPoints),
+      displayVolatilePoints: user.volatilePoints - (includeAdminPicks ? 0 : user.adminVolatilePoints),
+      hasAdminPoints: user.adminPoints > 0 || (showInProgress && user.adminVolatilePoints > 0),
+    }))
+    .sort(
+      (a, b) =>
+        b.displayPoints +
+        (showInProgress ? b.displayVolatilePoints : 0) -
+        a.displayPoints -
+        (showInProgress ? a.displayVolatilePoints : 0),
+    );
 
   return (
     <>
@@ -257,33 +276,54 @@ export default function ViewPicks() {
       <h2>
         Viewing picks for week {week.week}, {week.season}
       </h2>
-      {!historicalWeek && (
-        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+      <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+        {hasAdminPicks && (
           <FormControlLabel
-            control={<Switch checked={showInProgress} onChange={() => setShowInProgress(!showInProgress)} />}
-            label="Show points from in-progress games"
-          />
-          <FormControlLabel
-            control={<Switch checked={includeNpc} onChange={(e) => setIncludeNpc(e.target.checked)} />}
-            label={
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                Include NPCs
-                <SmartToy sx={{ fontSize: 18 }} />
-              </Box>
+            control={
+              <Switch
+                checked={includeAdminPicks}
+                onChange={(event) => setIncludeAdminPicks(event.target.checked)}
+              />
             }
+            label="Show points from admin picks"
           />
-        </Box>
-      )}
+        )}
+        {!historicalWeek && (
+          <>
+            <FormControlLabel
+              control={<Switch checked={showInProgress} onChange={() => setShowInProgress(!showInProgress)} />}
+              label="Show points from in-progress games"
+            />
+            <FormControlLabel
+              control={<Switch checked={includeNpc} onChange={(e) => setIncludeNpc(e.target.checked)} />}
+              label={
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  Include NPCs
+                  <SmartToy sx={{ fontSize: 18 }} />
+                </Box>
+              }
+            />
+          </>
+        )}
+      </Box>
       {!historicalWeek && showInProgress ? (
         <div>
           <h2>Including In-Progress</h2>
-          {activeUsers
+          {rankedUsers
             .filter((u) => (includeNpc ? true : !u.npc))
-            .sort((a, b) => b.points + b.volatilePoints - a.points - a.volatilePoints)
             .map((user) => (
-              <Tooltip key={user.name} title={user.name} arrow>
+              <Tooltip
+                key={user.name}
+                title={
+                  user.hasAdminPoints
+                    ? `${user.name}: ${user.adminPoints + user.adminVolatilePoints} points from admin picks${
+                        user.adminVolatilePoints > 0 ? ` (${user.adminVolatilePoints} in progress)` : ""
+                      }${includeAdminPicks ? "" : " (excluded from score)"}`
+                    : user.name
+                }
+                arrow
+              >
                 <Chip
-                  key={user.name}
                   avatar={
                     <Avatar
                       alt={user.name}
@@ -293,22 +333,34 @@ export default function ViewPicks() {
                       {user?.name.substring(0, 1)}
                     </Avatar>
                   }
-                  label={user.points + user.volatilePoints}
+                  label={`${user.displayPoints + user.displayVolatilePoints}${user.hasAdminPoints ? "*" : ""}`}
                   variant={user.name === session?.user?.name ? "filled" : "outlined"}
                   color={user.name === session?.user?.name ? "primary" : "default"}
-                  sx={user?.npc ? { border: "1px solid orange" } : undefined}
+                  sx={{
+                    ...(user?.npc ? { border: "1px solid orange" } : {}),
+                    ...(user.hasAdminPoints ? { border: "2px solid #d32f2f" } : {}),
+                  }}
                 />
               </Tooltip>
             ))}
         </div>
       ) : (
         <div>
-          {activeUsers
+          {rankedUsers
             .filter((u) => (includeNpc ? true : !u.npc))
             .map((user) => (
-              <Tooltip key={user.name} title={user.name} arrow>
+              <Tooltip
+                key={user.name}
+                title={
+                  user.hasAdminPoints
+                    ? `${user.name}: ${user.adminPoints} points from admin picks${
+                        includeAdminPicks ? "" : " (excluded from score)"
+                      }`
+                    : user.name
+                }
+                arrow
+              >
                 <Chip
-                  key={user.name}
                   avatar={
                     <Avatar
                       alt={user.name}
@@ -318,10 +370,13 @@ export default function ViewPicks() {
                       {user?.name.substring(0, 1)}
                     </Avatar>
                   }
-                  label={user.points}
+                  label={`${user.displayPoints}${user.hasAdminPoints ? "*" : ""}`}
                   variant={user.name === session?.user?.name ? "filled" : "outlined"}
                   color={user.name === session?.user?.name ? "primary" : "default"}
-                  sx={user?.npc ? { border: "1px solid orange" } : undefined}
+                  sx={{
+                    ...(user?.npc ? { border: "1px solid orange" } : {}),
+                    ...(user.hasAdminPoints ? { border: "2px solid #d32f2f" } : {}),
+                  }}
                 />
               </Tooltip>
             ))}
@@ -362,12 +417,15 @@ function CallStatusIcon({ status }) {
   return <RemoveCircleOutlined color="disabled" aria-label="Not needed" />;
 }
 
-function updateUserPoints(pickedGames, gamesWithScores, activeUsers) {
-  activeUsers.forEach((user) => {
-    user.points = 0;
-    user.volatilePoints = 0;
-  });
-  pickedGames.map((game) => {
+function calculateUserPoints(pickedGames, gamesWithScores, activeUsers) {
+  const usersWithScores = activeUsers.map((user) => ({
+    ...user,
+    points: 0,
+    adminPoints: 0,
+    volatilePoints: 0,
+    adminVolatilePoints: 0,
+  }));
+  pickedGames.forEach((game) => {
     const gameData = {
       ...game,
       ...(gamesWithScores.find((g) => String(g._id) === String(game._id)) || {}),
@@ -400,15 +458,18 @@ function updateUserPoints(pickedGames, gamesWithScores, activeUsers) {
       gamePoints["uf"] = 1;
       gamePoints["uu"] = 2;
     }
-    activeUsers.forEach((user) => {
-      const userChoice = game.userChoices.find((choice) => choice.userId === user.name);
+    usersWithScores.forEach((user) => {
+      const userChoice = game.userChoices?.find((choice) => choice.userId === user.name);
+      const points = gamePoints[userChoice?.choice] || 0;
 
       if (gameData.playedStatus.startsWith("COMPLETED")) {
-        user.points += gamePoints[userChoice?.choice] || 0;
+        user.points += points;
+        if (userChoice?.adminOverride === true) user.adminPoints += points;
       } else if (gameData.playedStatus === "LIVE") {
-        user.volatilePoints += gamePoints[userChoice?.choice] || 0;
+        user.volatilePoints += points;
+        if (userChoice?.adminOverride === true) user.adminVolatilePoints += points;
       }
     });
   });
-  activeUsers.sort((a, b) => b.points - a.points);
+  return usersWithScores;
 }

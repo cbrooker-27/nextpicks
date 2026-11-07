@@ -2,6 +2,7 @@ import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import ViewPicks from "./view";
 import { getGamesForWeekFromMsfWithStatus, getTeamStatisticsFromMsfWithStatus } from "@/app/lib/msf";
+import { getPickedGames, getThisYearsActiveUsers } from "@/app/utils/db";
 
 jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -70,6 +71,7 @@ describe("ViewPicks incremental loading", () => {
 
     const summary = screen.getByRole("button", { name: /0 of 6 calls succeeded/ });
     expect(summary).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByRole("switch", { name: "Show points from admin picks" })).not.toBeInTheDocument();
     expect(screen.getByText("Refresh live game scores")).toBeInTheDocument();
     expect(screen.getAllByText("Loading").length).toBeGreaterThan(0);
     expect(await screen.findByText("Cowboys: 20")).toBeInTheDocument();
@@ -98,5 +100,46 @@ describe("ViewPicks incremental loading", () => {
     expect(await screen.findByText("Live game scores are unavailable. Showing the latest scores we have.")).toBeInTheDocument();
     fireEvent.click(summary);
     expect(summary).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("subtracts admin points and marks the score when admin picks are excluded", async () => {
+    getThisYearsActiveUsers.mockResolvedValue(
+      JSON.stringify([{ name: "AdminPlayer" }, { name: "RegularPlayer" }]),
+    );
+    getPickedGames.mockResolvedValue(
+      JSON.stringify([
+        {
+          _id: 101,
+          week: 1,
+          season: 2025,
+          startTime: "2025-09-07T13:00:00.000Z",
+          awayFavorite: true,
+          spread: 5,
+          homeScore: 20,
+          awayScore: 24,
+          playedStatus: "COMPLETED",
+          location: "Test Stadium",
+          away: { id: 1, name: "Eagles", teamColoursHex: ["#000", "#fff"], officialLogoImageSrc: "/eagles.png" },
+          home: { id: 2, name: "Cowboys", teamColoursHex: ["#000", "#fff"], officialLogoImageSrc: "/cowboys.png" },
+          userChoices: [
+            { userId: "AdminPlayer", choice: "ff", adminOverride: true },
+            { userId: "RegularPlayer", choice: "uf" },
+          ],
+        },
+      ]),
+    );
+
+    render(<ViewPicks />);
+
+    const includedScore = await screen.findByText("1*");
+    const adminChip = includedScore.closest(".MuiChip-root");
+    expect(adminChip).toHaveStyle({ border: "2px solid rgb(211, 47, 47)" });
+    fireEvent.mouseOver(adminChip);
+    expect(await screen.findByText("AdminPlayer: 1 points from admin picks")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("switch", { name: "Show points from admin picks" }));
+
+    expect(await screen.findByText("0*")).toBeInTheDocument();
+    expect(screen.getByText("2").compareDocumentPosition(screen.getByText("0*")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

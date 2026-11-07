@@ -3,8 +3,13 @@ import { getUserStatsForStandings } from './users';
 import * as dbUtils from '@/app/utils/db';
 import * as msfUtils from '@/app/lib/msf';
 
-jest.mock('@/app/utils/db');
-jest.mock('@/app/lib/msf');
+jest.mock('@/app/utils/db', () => ({
+  getThisYearsActiveUsers: jest.fn(),
+  getAllPickedGames: jest.fn()
+}));
+jest.mock('@/app/lib/msf', () => ({
+  getGamesForWeekFromMsf: jest.fn()
+}));
 
 describe('getUserStatsForStandings', () => {
   it('calculates standings correctly based on mock db data', async () => {
@@ -41,5 +46,59 @@ describe('getUserStatsForStandings', () => {
     // uu choice should be 0 points
     expect(homer.totalPoints).toBe(0);
     expect(homer.week1).toBe(0);
+  });
+
+  it('tracks total and per-week points earned from admin picks', async () => {
+    const mockActiveUsers = [{ name: 'AdminPicked' }, { name: 'RegularPicker' }];
+    (dbUtils.getThisYearsActiveUsers as jest.Mock).mockResolvedValue(JSON.stringify(mockActiveUsers));
+
+    const mockPickedGames = [
+      {
+        week: 1,
+        awayFavorite: true,
+        spread: 3.5,
+        awayScore: 30,
+        homeScore: 20,
+        playedStatus: 'COMPLETED',
+        userChoices: [
+          { userId: 'AdminPicked', choice: 'ff', adminOverride: true },
+          { userId: 'RegularPicker', choice: 'uu' }
+        ]
+      },
+      {
+        week: 2,
+        awayFavorite: true,
+        spread: 3.5,
+        awayScore: 20,
+        homeScore: 24,
+        playedStatus: 'COMPLETED',
+        userChoices: [
+          { userId: 'AdminPicked', choice: 'uf', adminOverride: true },
+          { userId: 'RegularPicker', choice: 'uu' }
+        ]
+      }
+    ];
+    (dbUtils.getAllPickedGames as jest.Mock).mockResolvedValue(JSON.stringify(mockPickedGames));
+
+    const stats = await getUserStatsForStandings({ season: 2025, week: 2 }, false);
+    const adminPicked = stats.find((u: any) => u.name === 'AdminPicked');
+    const regularPicker = stats.find((u: any) => u.name === 'RegularPicker');
+
+    expect(adminPicked).toMatchObject({
+      totalPoints: 3,
+      adminPoints: 3,
+      hasAdminPicks: true,
+      week1: 2,
+      adminPointsWeek1: 2,
+      week2: 1,
+      adminPointsWeek2: 1
+    });
+    expect(regularPicker).toMatchObject({
+      totalPoints: 2,
+      adminPoints: 0,
+      hasAdminPicks: false,
+      adminPointsWeek1: 0,
+      adminPointsWeek2: 0
+    });
   });
 });

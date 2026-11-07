@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import GameScoreTile from "./gameScoreTile";
 import React from "react";
 
@@ -49,6 +49,39 @@ describe("GameScoreTile", () => {
     // TestUser chose 'ff' and that should be rendered as an avatar
     // The avatar has alt text 'TestUser'
     expect(screen.getByAltText("TestUser")).toBeInTheDocument();
+  });
+
+  it("highlights picks made by an admin with a red avatar border", () => {
+    render(
+      <GameScoreTile
+        game={{ ...mockGame, userChoices: [{ userId: "TestUser", choice: "ff", adminOverride: true }] }}
+        liveDetails={mockLiveDetails}
+        users={mockUsers}
+        activeUser={{ name: "TestUser" }}
+        teamDetails={mockTeamDetails}
+      />,
+    );
+
+    expect(screen.getByAltText("TestUser").closest(".MuiAvatar-root")).toHaveStyle({
+      border: "3px solid rgb(211, 47, 47)",
+    });
+  });
+
+  it("shows the admin-pick label on hover and when tapped", async () => {
+    render(
+      <GameScoreTile
+        game={{ ...mockGame, userChoices: [{ userId: "TestUser", choice: "ff", adminOverride: true }] }}
+        liveDetails={mockLiveDetails}
+        users={mockUsers}
+        activeUser={{ name: "TestUser" }}
+        teamDetails={mockTeamDetails}
+      />,
+    );
+
+    const avatar = screen.getByAltText("TestUser");
+    fireEvent.touchStart(avatar);
+
+    expect(await screen.findByText("TestUser (Admin pick)")).toBeInTheDocument();
   });
 
   it("renders safely when MSF game details are unavailable", () => {

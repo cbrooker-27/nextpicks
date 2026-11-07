@@ -41,7 +41,12 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
     if (!user) return null;
     if (user.npc && !includeNpc) return null;
     return (
-      <Tooltip key={choice.userId} title={choice.userId} arrow>
+      <Tooltip
+        key={choice.userId}
+        title={`${choice.userId}${choice.adminOverride === true ? " (Admin pick)" : ""}`}
+        enterTouchDelay={0}
+        arrow
+      >
         <Avatar
           className={
             choice.userId === activeUser?.name
@@ -53,6 +58,7 @@ export default function GameScoreTile({ game, liveDetails, users, activeUser, te
           key={choice.userId}
           alt={choice.userId}
           src={user?.image}
+          style={choice.adminOverride === true ? { border: "3px solid #d32f2f" } : undefined}
         >
           {user?.name.substring(0, 1)}
         </Avatar>
