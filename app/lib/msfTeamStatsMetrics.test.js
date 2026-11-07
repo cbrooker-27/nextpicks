@@ -1,6 +1,10 @@
 /** @jest-environment node */
 import { connectToDatabase } from "@/app/utils/db";
-import { getTeamStatsMetrics, recordMsfRequest } from "./msfTeamStatsMetrics";
+import {
+  getTeamStatsMetrics,
+  recordMsfRequest,
+  recordPendingMsfRequest,
+} from "./msfTeamStatsMetrics";
 
 jest.mock("@/app/utils/db", () => ({
   connectToDatabase: jest.fn(),
@@ -84,6 +88,68 @@ describe("MSF request metrics", () => {
       { upsert: true },
     );
     expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it("stores an in-flight request without counting it as completed", async () => {
+    await recordPendingMsfRequest({
+      requestId: "request-1",
+      requestType: "team_stats",
+      season: 2026,
+      week: 3,
+      timeoutMs: 50000,
+    });
+
+    expect(updateOne).toHaveBeenCalledWith(
+      { _id: "msf_team_stats" },
+      expect.objectContaining({
+        $set: expect.objectContaining({ lastStatus: "pending", lastRequestAt: expect.any(Date) }),
+        $push: {
+          recentRequests: {
+            $each: [
+              expect.objectContaining({
+                requestId: "request-1",
+                requestType: "team_stats",
+                season: 2026,
+                week: 3,
+                timeoutMs: 50000,
+                status: "pending",
+              }),
+            ],
+            $slice: -50,
+          },
+        },
+      }),
+      { upsert: true },
+    );
+    expect(updateOne.mock.calls[0][1].$inc).toBeUndefined();
+  });
+
+  it("updates the in-flight request with its eventual response details", async () => {
+    await recordMsfRequest({
+      requestId: "request-1",
+      requestType: "team_stats",
+      status: "error",
+      season: 2026,
+      week: 3,
+      durationMs: 12000,
+      httpStatus: 503,
+      responseBody: '{"errorCode":"UPSTREAM_BUSY"}',
+      error: { name: "MsfHttpError", message: "MSF request failed with status 503" },
+    });
+
+    expect(updateOne).toHaveBeenCalledWith(
+      { _id: "msf_team_stats" },
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          "recentRequests.$[request].status": "error",
+          "recentRequests.$[request].durationMs": 12000,
+          "recentRequests.$[request].httpStatus": 503,
+          "recentRequests.$[request].responseBody": '{"errorCode":"UPSTREAM_BUSY"}',
+          "recentRequests.$[request].errorName": "MsfHttpError",
+        }),
+      }),
+      { upsert: true, arrayFilters: [{ "request.requestId": "request-1" }] },
+    );
   });
 
   it("returns persisted metrics and closes the database connection", async () => {

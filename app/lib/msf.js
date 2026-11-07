@@ -1,8 +1,11 @@
 "use server";
+import { randomUUID } from "node:crypto";
+import { after } from "next/server";
 import { getCurrentWeek } from "@/app/utils/db";
-import { recordMsfRequest } from "@/app/lib/msfTeamStatsMetrics";
+import { recordMsfRequest, recordPendingMsfRequest } from "@/app/lib/msfTeamStatsMetrics";
 
 const MAX_MSF_TIMEOUT_MS = 7000;
+const MAX_MSF_DIAGNOSTIC_TIMEOUT_MS = 50000;
 
 function findTeam(team) {
   return team.abbreviation === this;
@@ -27,25 +30,48 @@ function getMsfTimeoutMs() {
   return Math.min(configuredTimeoutMs, MAX_MSF_TIMEOUT_MS);
 }
 
-async function fetchFromMsf(url, headers) {
+function getMsfDiagnosticTimeoutMs() {
+  const configuredTimeoutMs = Number(process.env.MSF_DIAGNOSTIC_TIMEOUT_MS);
+  if (!Number.isFinite(configuredTimeoutMs) || configuredTimeoutMs <= 0) {
+    return MAX_MSF_DIAGNOSTIC_TIMEOUT_MS;
+  }
+  return Math.min(configuredTimeoutMs, MAX_MSF_DIAGNOSTIC_TIMEOUT_MS);
+}
+
+async function fetchFromMsf(url, headers, timeoutMs = getMsfTimeoutMs()) {
   const controller = new AbortController();
-  const timeoutMs = getMsfTimeoutMs();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let response;
 
   try {
-    const response = await fetch(url, { method: "GET", headers, signal: controller.signal });
+    response = await fetch(url, { method: "GET", headers, signal: controller.signal });
     if (!response.ok) {
       const error = new Error(`MSF request failed with status ${response.status}`);
       error.name = "MsfHttpError";
       error.status = response.status;
+      if (typeof response.text === "function") {
+        try {
+          error.responseBody = (await response.text()).slice(0, 2000);
+        } catch (bodyError) {
+          error.responseBodyReadError =
+            bodyError instanceof Error ? bodyError.message : String(bodyError);
+        }
+      }
       throw error;
     }
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (error) {
+      if (error instanceof Error) error.status = response.status;
+      throw error;
+    }
     return { response, data };
   } catch (error) {
     if (controller.signal.aborted) {
       const timeoutError = new Error(`MSF request timed out after ${timeoutMs}ms`, { cause: error });
       timeoutError.name = "TimeoutError";
+      if (response) timeoutError.status = response.status;
       throw timeoutError;
     }
     throw error;
@@ -54,12 +80,23 @@ async function fetchFromMsf(url, headers) {
   }
 }
 
-async function logMsfRequest({ requestType, week, startedAt, status, httpStatus, error, resultCount }) {
+async function logMsfRequest({
+  requestType,
+  week,
+  startedAt,
+  status,
+  httpStatus,
+  error,
+  resultCount,
+  requestId,
+  persistImmediately = true,
+}) {
   const durationMs = Date.now() - startedAt;
   const logContext = {
     event: `msf_${requestType}_request`,
     season: week.season,
     week: week.week,
+    ...(requestId ? { requestId } : {}),
   };
   if (status === "success") {
     console.info(
@@ -80,20 +117,26 @@ async function logMsfRequest({ requestType, week, startedAt, status, httpStatus,
         status,
         durationMs,
         httpStatus,
+        responseBody: error?.responseBody,
         error: {
           name: errorName,
           message: errorMessage,
+          ...(error?.responseBodyReadError ? { responseBodyReadError: error.responseBodyReadError } : {}),
         },
       }),
     );
   }
-  await recordMsfRequest({
+  const metric = {
+    requestId,
     requestType,
     status,
     season: week.season,
     week: week.week,
     durationMs,
     httpStatus,
+    resultCount,
+    responseBody: error?.responseBody,
+    responseBodyReadError: error?.responseBodyReadError,
     error:
       status === "success"
         ? undefined
@@ -101,7 +144,68 @@ async function logMsfRequest({ requestType, week, startedAt, status, httpStatus,
             name: error instanceof Error ? error.name : typeof error,
             message: error instanceof Error ? error.message : String(error),
           },
-  });
+  };
+  if (persistImmediately) {
+    await recordMsfRequest(metric);
+  } else {
+    after(() => recordMsfRequest(metric));
+  }
+}
+
+async function resolveTeamStatsRequest({ week, startedAt, requestId, outcome, persistImmediately = false }) {
+  if (outcome.error) {
+    const error = outcome.error;
+    const status = error instanceof Error && error.name === "TimeoutError" ? "timeout" : "error";
+    await logMsfRequest({
+      requestType: "team_stats",
+      week,
+      startedAt,
+      status,
+      httpStatus: error instanceof Error ? error.status : undefined,
+      error,
+      requestId,
+      persistImmediately,
+    });
+    return { data: [], source: "unavailable" };
+  }
+
+  let httpStatus;
+  try {
+    const { response, data: resJson } = outcome.result;
+    httpStatus = response.status;
+    const simpleTeams = resJson.teams.map((team) => ({
+      _id: team.team.id,
+      wins: team.stats.standings.wins,
+      losses: team.stats.standings.losses,
+      ties: team.stats.standings.ties,
+      pointsFor: team.stats.standings.pointsFor,
+      pointsAgainst: team.stats.standings.pointsAgainst,
+    }));
+    await logMsfRequest({
+      requestType: "team_stats",
+      week,
+      startedAt,
+      status: "success",
+      httpStatus: response.status,
+      resultCount: simpleTeams.length,
+      requestId,
+      persistImmediately,
+    });
+    return { data: simpleTeams, source: "live" };
+  } catch (error) {
+    const status = error instanceof Error && error.name === "TimeoutError" ? "timeout" : "error";
+    await logMsfRequest({
+      requestType: "team_stats",
+      week,
+      startedAt,
+      status,
+      httpStatus: error instanceof Error ? error.status ?? httpStatus : httpStatus,
+      error,
+      requestId,
+      persistImmediately,
+    });
+    return { data: [], source: "unavailable" };
+  }
 }
 
 export async function getGamesForWeekFromMsfWithStatus(week) {
@@ -166,6 +270,7 @@ export async function getGamesForWeekFromMsfWithStatus(week) {
       status: "success",
       httpStatus: response.status,
       resultCount: simpleGames.length,
+      persistImmediately: false,
     });
     return { data: simpleGames, source: "live" };
   } catch (error) {
@@ -178,6 +283,7 @@ export async function getGamesForWeekFromMsfWithStatus(week) {
       status,
       httpStatus: error instanceof Error ? error.status : undefined,
       error,
+      persistImmediately: false,
     });
     return { data: [], source: "unavailable" };
   }
@@ -191,11 +297,13 @@ export async function getGamesForWeekFromMsf(week) {
 export async function getTeamStatisticsFromMsfWithStatus(week) {
   const startedAt = Date.now();
   const timeoutMs = getMsfTimeoutMs();
+  const diagnosticTimeoutMs = getMsfDiagnosticTimeoutMs();
   const logContext = {
     event: "msf_team_stats_request",
     season: week.season,
     week: week.week,
     timeoutMs,
+    diagnosticTimeoutMs,
   };
   console.info(JSON.stringify({ ...logContext, status: "started" }));
   try {
@@ -206,32 +314,50 @@ export async function getTeamStatisticsFromMsfWithStatus(week) {
     if (process.env.DEV_MODE === "true") {
       console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
     }
-    const result = await fetchFromMsf(msfUrl, headers);
-    const response = result.response;
-    const resJson = result.data;
-    if (process.env.DEV_MODE === "true") {
-      console.log(`[EXTERNAL_CALL] Return Code: ${response.status}`);
+    const requestId = randomUUID();
+    const requestPromise = fetchFromMsf(msfUrl, headers, diagnosticTimeoutMs).then(
+      (result) => ({ result }),
+      (error) => ({ error }),
+    );
+    let responseTimer;
+    const outcome = await Promise.race([
+      requestPromise,
+      new Promise((resolve) => {
+        responseTimer = setTimeout(() => resolve({ pending: true }), timeoutMs);
+      }),
+    ]);
+    clearTimeout(responseTimer);
+
+    if (!outcome.pending) {
+      return await resolveTeamStatsRequest({ week, startedAt, outcome });
     }
-    const teams = resJson.teams;
-    const simpleTeams = teams.map((team) => {
-      return {
-        _id: team.team.id,
-        wins: team.stats.standings.wins,
-        losses: team.stats.standings.losses,
-        ties: team.stats.standings.ties,
-        pointsFor: team.stats.standings.pointsFor,
-        pointsAgainst: team.stats.standings.pointsAgainst,
-      };
+
+    after(async () => {
+      await recordPendingMsfRequest({
+        requestId,
+        requestType: "team_stats",
+        season: week.season,
+        week: week.week,
+        timeoutMs: diagnosticTimeoutMs,
+      });
+      console.warn(
+        JSON.stringify({
+          ...logContext,
+          status: "pending",
+          message: "MSF response exceeded the page wait; continuing in the background.",
+          requestId,
+        }),
+      );
+      const finalOutcome = await requestPromise;
+      await resolveTeamStatsRequest({
+        week,
+        startedAt,
+        requestId,
+        outcome: finalOutcome,
+        persistImmediately: true,
+      });
     });
-    await logMsfRequest({
-      requestType: "team_stats",
-      week,
-      startedAt,
-      status: "success",
-      httpStatus: response.status,
-      resultCount: simpleTeams.length,
-    });
-    return { data: simpleTeams, source: "live" };
+    return { data: [], source: "unavailable", pending: true };
   } catch (error) {
     const status = error instanceof Error && error.name === "TimeoutError" ? "timeout" : "error";
     await logMsfRequest({

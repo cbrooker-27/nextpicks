@@ -1,7 +1,7 @@
 import React from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import ViewPicks from "./view";
-import { getGamesForWeekFromMsfWithStatus, getTeamStatisticsFromMsfWithStatus } from "@/app/lib/msf";
+import { getMsfFeed } from "@/app/lib/msfClient";
 import { getPickedGames, getThisYearsActiveUsers } from "@/app/utils/db";
 
 jest.mock("next/navigation", () => ({
@@ -13,9 +13,8 @@ jest.mock("next-auth/react", () => ({
   useSession: () => ({ data: { user: { name: "TestUser" } }, status: "authenticated" }),
 }));
 
-jest.mock("@/app/lib/msf", () => ({
-  getGamesForWeekFromMsfWithStatus: jest.fn(() => new Promise(() => {})),
-  getTeamStatisticsFromMsfWithStatus: jest.fn(() => new Promise(() => {})),
+jest.mock("@/app/lib/msfClient", () => ({
+  getMsfFeed: jest.fn(() => new Promise(() => {})),
 }));
 
 jest.mock("@/app/utils/db", () => ({
@@ -60,10 +59,13 @@ jest.mock("@/app/context/SeasonStatistics", () => {
 });
 
 describe("ViewPicks incremental loading", () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
-    getGamesForWeekFromMsfWithStatus.mockImplementation(() => new Promise(() => {}));
-    getTeamStatisticsFromMsfWithStatus.mockImplementation(() => new Promise(() => {}));
+    getMsfFeed.mockImplementation(() => new Promise(() => {}));
   });
 
   it("renders Mongo game data before MSF requests resolve", async () => {
@@ -78,8 +80,7 @@ describe("ViewPicks incremental loading", () => {
   });
 
   it("auto-collapses and shows elapsed time when all calls succeed", async () => {
-    getGamesForWeekFromMsfWithStatus.mockResolvedValue({ data: [], source: "live" });
-    getTeamStatisticsFromMsfWithStatus.mockResolvedValue({ data: [], source: "live" });
+    getMsfFeed.mockResolvedValue({ data: [], source: "live" });
 
     render(<ViewPicks />);
 
@@ -89,8 +90,9 @@ describe("ViewPicks incremental loading", () => {
   });
 
   it("stays expanded when a call fails", async () => {
-    getGamesForWeekFromMsfWithStatus.mockResolvedValue({ data: [], source: "unavailable" });
-    getTeamStatisticsFromMsfWithStatus.mockResolvedValue({ data: [], source: "live" });
+    getMsfFeed.mockImplementation((feed) =>
+      Promise.resolve({ data: [], source: feed === "games" ? "unavailable" : "live" }),
+    );
 
     render(<ViewPicks />);
 
@@ -100,6 +102,45 @@ describe("ViewPicks incremental loading", () => {
     expect(await screen.findByText("Live game scores are unavailable. Showing the latest scores we have.")).toBeInTheDocument();
     fireEvent.click(summary);
     expect(summary).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("refreshes scores while team records are still pending", async () => {
+    getMsfFeed.mockImplementation((feed) =>
+      feed === "games"
+        ? Promise.resolve({ data: [{ _id: 101, homeScore: 25 }], source: "live" })
+        : new Promise(() => {}),
+    );
+
+    render(<ViewPicks />);
+
+    expect(await screen.findByText("Cowboys: 25")).toBeInTheDocument();
+    expect(screen.getByText("Getting team records")).toBeInTheDocument();
+    expect(getMsfFeed).toHaveBeenCalledWith("games", { week: 1, season: 2025 });
+    expect(getMsfFeed).toHaveBeenCalledWith("team-stats", { week: 1, season: 2025 });
+  });
+
+  it("settles the team-record status when its browser request times out", async () => {
+    jest.useFakeTimers();
+    getMsfFeed.mockImplementation((feed) =>
+      feed === "games"
+        ? Promise.resolve({ data: [], source: "live" })
+        : new Promise((_, reject) => setTimeout(() => reject(new Error("team stats timed out")), 9000)),
+    );
+
+    render(<ViewPicks />);
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(getMsfFeed).toHaveBeenCalledWith("team-stats", { week: 1, season: 2025 });
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(9000);
+    });
+
+    expect(screen.getByRole("button", { name: /5 of 6 calls succeeded/ })).toBeInTheDocument();
+    expect(screen.getByText("Getting team records").parentElement).toHaveTextContent("Failed");
   });
 
   it("subtracts admin points and marks the score when admin picks are excluded", async () => {

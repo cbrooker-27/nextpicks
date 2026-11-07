@@ -1,6 +1,6 @@
 "use client";
 
-import { getTeamStatisticsFromMsfWithStatus, getGamesForWeekFromMsfWithStatus } from "@/app/lib/msf";
+import { getMsfFeed } from "@/app/lib/msfClient";
 import { getCurrentWeek, getPickedGames, getThisYearsActiveUsers, getAllGames } from "@/app/utils/db";
 import { useSearchParams } from "next/navigation";
 import GameScoreTile from "@/app/components/games/gameScoreTile";
@@ -97,6 +97,24 @@ export default function ViewPicks() {
       const week = weekParam ? { week: Number(weekParam), season: currentWeek.season } : currentWeek;
       setWeek(week);
 
+      void getPickedGames(week)
+        .then((fetchedPicks) => {
+          if (!isMounted) return;
+          setPickedGames(JSON.parse(fetchedPicks));
+          setLoadError(null);
+          setCallStatus("picks", "success");
+        })
+        .catch((error) => {
+          console.error("Error loading picks:", error);
+          if (isMounted) {
+            setLoadError("Unable to load picks right now.");
+            setCallStatus("picks", "failed");
+          }
+        })
+        .finally(() => {
+          if (isMounted) setIsLoading(false);
+        });
+
       void getThisYearsActiveUsers()
         .then((users) => {
           if (!isMounted) return;
@@ -119,7 +137,7 @@ export default function ViewPicks() {
           if (isMounted) setCallStatus("season", "failed");
         });
 
-      void getTeamStatisticsFromMsfWithStatus(week)
+      void getMsfFeed("team-stats", week)
         .then((result) => {
           if (!isMounted) return;
           setTeamDetails(result.data || []);
@@ -131,7 +149,7 @@ export default function ViewPicks() {
         });
 
       if (week.week === currentWeek.week) {
-        void getGamesForWeekFromMsfWithStatus(week)
+        void getMsfFeed("games", week)
           .then((result) => {
             if (!isMounted) return;
             setGamesWithScores(result.data || []);
@@ -148,22 +166,6 @@ export default function ViewPicks() {
         setGamesWithScores([]);
         setShowScoreFailureDialog(false);
         setCallStatus("scores", "skipped");
-      }
-
-      try {
-        const fetchedPicks = await getPickedGames(week);
-        if (!isMounted) return;
-        setPickedGames(JSON.parse(fetchedPicks));
-        setLoadError(null);
-        setCallStatus("picks", "success");
-      } catch (error) {
-        console.error("Error loading picks:", error);
-        if (isMounted) {
-          setLoadError("Unable to load picks right now.");
-          setCallStatus("picks", "failed");
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
       }
     }
 
