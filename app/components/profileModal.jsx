@@ -152,13 +152,29 @@ export default function ProfileModal({ open, onClose, user }) {
                 }
 
                 return (
-                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 2 }}>
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(5, 1fr)" }, gap: 2 }}>
                     <Paper sx={{ p: 2, textAlign: "center", bgcolor: "primary.light", color: "primary.contrastText" }}>
                       <Typography variant="body2" sx={{ mb: 1 }}>
                         Total Points This Year
                       </Typography>
                       <Typography variant="h4" sx={{ fontWeight: 700 }}>
                         {userStats.totalPoints}
+                      </Typography>
+                    </Paper>
+                    <Paper sx={{ p: 2, textAlign: "center", bgcolor: "info.light", color: "info.contrastText" }}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+                        Admin Picks Made
+                      </Typography>
+                      <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                        {userStats.totalAdminPicks || 0}
+                      </Typography>
+                    </Paper>
+                    <Paper sx={{ p: 2, textAlign: "center", bgcolor: "warning.light", color: "warning.contrastText" }}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+                        Points from Admin Picks
+                      </Typography>
+                      <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                        {userStats.adminPoints || 0}
                       </Typography>
                     </Paper>
                     <Paper
@@ -201,6 +217,9 @@ export default function ProfileModal({ open, onClose, user }) {
                           Points Earned
                         </TableCell>
                         <TableCell align="center" sx={{ color: "white", fontWeight: 600 }}>
+                          Admin Picks
+                        </TableCell>
+                        <TableCell align="center" sx={{ color: "white", fontWeight: 600 }}>
                           Place
                         </TableCell>
                       </TableRow>
@@ -211,6 +230,8 @@ export default function ProfileModal({ open, onClose, user }) {
                         const allStats = [...(userStats._allStats || [])];
                         const weekKey = `week${week}`;
                         const userPoints = userStats[weekKey] || 0;
+                        const adminPicks = userStats[`adminPicksWeek${week}`] || 0;
+                        const adminPoints = userStats[`adminPointsWeek${week}`] || 0;
 
                         // Get all unique point values for this week, sorted descending
                         const sortedPoints = allStats.map((u) => u[weekKey] || 0).sort((a, b) => b - a);
@@ -228,6 +249,11 @@ export default function ProfileModal({ open, onClose, user }) {
                             <TableCell sx={{ fontWeight: 500 }}>Week {week}</TableCell>
                             <TableCell align="center" sx={{ fontWeight: 600 }}>
                               {userPoints}
+                            </TableCell>
+                            <TableCell align="center">
+                              {adminPicks > 0
+                                ? `${adminPicks} pick${adminPicks === 1 ? "" : "s"}, ${adminPoints} points`
+                                : "-"}
                             </TableCell>
                             <TableCell align="center" sx={{ fontWeight: 600 }}>
                               {positionDisplay}

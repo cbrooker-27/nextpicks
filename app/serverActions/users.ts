@@ -4,11 +4,18 @@ import { getPickedGames, getThisYearsActiveUsers, getAllPickedGames } from "@/ap
 export async function getUserStatsForStandings(week: { week: number; season: number; },includeCurrentWeek: boolean) {
   const activeUsers = JSON.parse(await getThisYearsActiveUsers());
 
-  activeUsers.forEach((user: { totalPoints: number; points: number[]; adminPoints: number; hasAdminPicks: boolean }) => {
+  activeUsers.forEach((user: {
+    totalPoints: number;
+    points: number[];
+    adminPoints: number;
+    totalAdminPicks: number;
+    hasAdminPicks: boolean;
+  }) => {
     user.totalPoints = 0;
     user.points = [];
     user.points[0] = 0;
     user.adminPoints = 0;
+    user.totalAdminPicks = 0;
     user.hasAdminPicks = false;
   });
 
@@ -27,6 +34,7 @@ export async function getUserStatsForStandings(week: { week: number; season: num
       user["weekLive" + i] = 0;
       user["possiblePoints" + i] = 0;
       user["adminPointsWeek" + i] = 0;
+      user["adminPicksWeek" + i] = 0;
     });
 
     allPickedGames.filter((game: { week: number; }) => game.week === i).map((game: { _id: any; awayScore: any; homeScore: any; playedStatus: string; awayFavorite: any; spread: number; userChoices: any[]; }) => {
@@ -60,6 +68,8 @@ export async function getUserStatsForStandings(week: { week: number; season: num
         const userChoice = game.userChoices.find((choice: { userId: any; }) => choice.userId === user.name);
         if (userChoice?.adminOverride === true) {
           user.hasAdminPicks = true;
+          user.totalAdminPicks += 1;
+          user["adminPicksWeek" + i] += 1;
         }
 
         if (game.playedStatus.startsWith("COMPLETED")) {

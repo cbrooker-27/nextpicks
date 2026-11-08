@@ -1,12 +1,7 @@
 "use client";
-import { Skeleton, Tooltip, Chip } from "@mui/material";
-import { Sports, LiveTv, Update } from "@mui/icons-material";
+import { Avatar, Skeleton, Tooltip } from "@mui/material";
 import { useEffect, useState } from "react";
-import { getAllUserFromDb, getThisWeeksPickedGames, getThisYearsActiveUsers } from "../../utils/db";
-import cssClasses from "./viewPicks.module.css";
-import Avatar from "@mui/material/Avatar";
-import AvatarGroup from "@mui/material/AvatarGroup";
-import { useSession } from "next-auth/react";
+import { getThisWeeksPickedGames, getThisYearsActiveUsers } from "../../utils/db";
 import { getThisWeeksGamesFromMsf } from "../../lib/msf.js";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 
@@ -16,14 +11,36 @@ export default function ViewPicks() {
   const [gamesWithScores, setGamesWithScores] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { data: session, status } = useSession();
-
   const columns: GridColDef[] = [
-    { field: "favorite", headerName: "Favorite", width: 70 },
-    { field: "spread", headerName: "Spread", width: 35 },
-    { field: "underdog", headerName: "Underdog", width: 70 }
+    {
+      field: "favorite",
+      headerName: "Favorite",
+      width: 72,
+      sortable: false,
+      renderCell: (params) => (
+        <Tooltip title={params.row.favoriteName || params.value}>
+          <Avatar src={params.row.favoriteLogo} alt={`${params.value} logo`} sx={{ width: 30, height: 30 }}>
+            {params.value}
+          </Avatar>
+        </Tooltip>
+      ),
+    },
+    { field: "spread", headerName: "Spread", width: 70 },
+    {
+      field: "underdog",
+      headerName: "Underdog",
+      width: 72,
+      sortable: false,
+      renderCell: (params) => (
+        <Tooltip title={params.row.underdogName || params.value}>
+          <Avatar src={params.row.underdogLogo} alt={`${params.value} logo`} sx={{ width: 30, height: 30 }}>
+            {params.value}
+          </Avatar>
+        </Tooltip>
+      ),
+    },
   ];
-  users.map((user) => {
+  users.forEach((user) => {
     columns.push({
       field: user.name,
       headerName: user.name,
@@ -34,16 +51,26 @@ export default function ViewPicks() {
   const rows = [
   ];
 
-  gamesWithScores.map((game) => {
-    const row: any = { id: game._id, spread: "tbd", favorite: game.home.abbreviation, underdog: game.away.abbreviation };
+  gamesWithScores.forEach((game) => {
+    const pickedGame = pickedGames.find((picked) => picked._id === game._id);
+    const favorite = pickedGame?.awayFavorite ? game.away : game.home;
+    const underdog = pickedGame?.awayFavorite ? game.home : game.away;
+    const row: any = {
+      id: game._id,
+      spread: pickedGame ? pickedGame.spread : "N/A",
+      favorite: favorite.abbreviation,
+      favoriteName: favorite.name,
+      favoriteLogo: favorite.officialLogoImageSrc,
+      underdog: underdog.abbreviation,
+      underdogName: underdog.name,
+      underdogLogo: underdog.officialLogoImageSrc,
+    };
     users.forEach((user) => {
-      const pickedGame = pickedGames.find((picked) => picked._id === game._id);
       if (!pickedGame) {
-        row["spread"] = "N/A";
+        row[user.name] = "NP";
         return;
       }
       const userPick = pickedGame.userChoices.find((pick) => pick.userId === user.name);
-      row["spread"] = pickedGame.spread;
       row[user.name] = userPick ? userPick.choice : "NP";
     });
     rows.push(row);

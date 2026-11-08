@@ -76,6 +76,17 @@ describe('getUserStatsForStandings', () => {
           { userId: 'AdminPicked', choice: 'uf', adminOverride: true },
           { userId: 'RegularPicker', choice: 'uu' }
         ]
+      },
+      {
+        week: 2,
+        awayFavorite: true,
+        spread: 3.5,
+        awayScore: 0,
+        homeScore: 0,
+        playedStatus: 'UNPLAYED',
+        userChoices: [
+          { userId: 'AdminPicked', choice: 'ff', adminOverride: true }
+        ]
       }
     ];
     (dbUtils.getAllPickedGames as jest.Mock).mockResolvedValue(JSON.stringify(mockPickedGames));
@@ -87,18 +98,24 @@ describe('getUserStatsForStandings', () => {
     expect(adminPicked).toMatchObject({
       totalPoints: 3,
       adminPoints: 3,
+      totalAdminPicks: 3,
       hasAdminPicks: true,
       week1: 2,
       adminPointsWeek1: 2,
       week2: 1,
-      adminPointsWeek2: 1
+      adminPointsWeek2: 1,
+      adminPicksWeek1: 1,
+      adminPicksWeek2: 2
     });
     expect(regularPicker).toMatchObject({
       totalPoints: 2,
       adminPoints: 0,
+      totalAdminPicks: 0,
       hasAdminPicks: false,
       adminPointsWeek1: 0,
-      adminPointsWeek2: 0
+      adminPointsWeek2: 0,
+      adminPicksWeek1: 0,
+      adminPicksWeek2: 0
     });
   });
 });
