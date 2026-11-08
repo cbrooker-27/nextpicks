@@ -65,8 +65,6 @@ export default function Home() {
   );
   const hasGamesToSelect = pickedGames.length > 0;
   const standingsStats = week?.week === 1 ? [] : userStats;
-  console.log("session:", session);
-  console.log("status:", status);
   // if (status !== "authenticated") {
   //   void update();
   // }

@@ -5,6 +5,7 @@ import {
   recordMsfRequest,
   recordPendingMsfRequest,
 } from "./msfTeamStatsMetrics";
+import { spyOnConsole } from "@/app/testUtils/console";
 
 jest.mock("@/app/utils/db", () => ({
   connectToDatabase: jest.fn(),
@@ -164,7 +165,14 @@ describe("MSF request metrics", () => {
   });
 
   it("logs metric persistence errors without throwing", async () => {
-    const error = jest.spyOn(console, "error").mockImplementation(() => {});
+    const error = spyOnConsole("error", (message) => {
+      if (typeof message !== "string") return false;
+      try {
+        return JSON.parse(message).event === "msf.request_metrics_persist_failed";
+      } catch {
+        return false;
+      }
+    });
     connectToDatabase.mockRejectedValueOnce(new Error("Mongo unavailable"));
 
     await expect(
@@ -177,10 +185,10 @@ describe("MSF request metrics", () => {
       }),
     ).resolves.toBeUndefined();
 
-    expect(error).toHaveBeenCalledWith(
-      "Unable to persist MSF request metrics:",
-      expect.objectContaining({ message: "Mongo unavailable" }),
-    );
+    expect(JSON.parse(error.mock.calls[0][0])).toMatchObject({
+      event: "msf.request_metrics_persist_failed",
+      error: { message: "Mongo unavailable" },
+    });
     error.mockRestore();
   });
 });

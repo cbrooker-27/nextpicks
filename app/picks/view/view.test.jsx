@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import ViewPicks from "./view";
 import { getMsfFeed } from "@/app/lib/msfClient";
 import { getPickedGames, getThisYearsActiveUsers } from "@/app/utils/db";
+import { spyOnConsole } from "@/app/testUtils/console";
 
 jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -61,6 +62,7 @@ jest.mock("@/app/context/SeasonStatistics", () => {
 describe("ViewPicks incremental loading", () => {
   afterEach(() => {
     jest.useRealTimers();
+    jest.restoreAllMocks();
   });
 
   beforeEach(() => {
@@ -120,6 +122,13 @@ describe("ViewPicks incremental loading", () => {
   });
 
   it("settles the team-record status when its browser request times out", async () => {
+    spyOnConsole(
+      "error",
+      (message, error) =>
+        message === "Error loading MSF team standings:" &&
+        error instanceof Error &&
+        error.message === "team stats timed out",
+    );
     jest.useFakeTimers();
     getMsfFeed.mockImplementation((feed) =>
       feed === "games"

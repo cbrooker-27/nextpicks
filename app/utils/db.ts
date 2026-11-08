@@ -3,6 +3,7 @@ import { MongoClient, Db, WithId } from "mongodb";
 import { User, Game, UserChoice, WeekConfig } from "../../types";
 import { auth } from "../../auth";
 import { isAdminEmail } from "../lib/admin";
+import { isDebugEnabled, logDebug, logError, logInfo } from "../lib/logger";
 
 const uri =
   process.env.MONGODB_URI ||
@@ -44,7 +45,6 @@ export const updateUser = async (user: User) => {
   const client = await connectToDatabase();
   const db: Db = client.db(process.env.MONGODB_DB || "picks");
   const updatedUser = await db.collection<User>("users").updateOne({ _id: user._id as any }, { $set: user });
-  console.log("updated user: " + updatedUser);
   await client.close();
   return updatedUser;
 };
@@ -53,7 +53,6 @@ export const getCurrentWeek = async (): Promise<{ week: number; season: number }
   const client = await connectToDatabase();
   const db: Db = client.db(process.env.MONGODB_DB || "picks");
   const week = await db.collection<WeekConfig>("currentWeek").findOne();
-  console.log(week);
   await client.close();
   return { week: week!.week, season: Number(week!.season) };
 };
@@ -74,27 +73,21 @@ export const updateCurrentWeek = async (newWeekOrConfig: number | WeekConfig) =>
     lastWeeksPicks.map(async (game) => {
       if (!game.userChoices?.some((choice) => choice.userId === "Homer")) {
         await homerChoice(game, db);
-        console.log("Added Homer choice for game ", game._id);
       }
       if (!game.userChoices?.some((choice) => choice.userId === "Jackie")) {
         await jackieChoice(game, db);
-        console.log("Added Jackie choice for game ", game._id);
       }
       if (!game.userChoices?.some((choice) => choice.userId === "Freddy")) {
         await freddyChoice(game, db);
-        console.log("Added Freddy choice for game ", game._id);
       }
       if (!game.userChoices?.some((choice) => choice.userId === "Underdog")) {
         await underdogChoice(game, db);
-        console.log("Added Underdog choice for game ", game._id);
       }
       if (!game.userChoices?.some((choice) => choice.userId === "Robbie")) {
         await robbieChoice(game, db);
-        console.log("Added Robbie choice for game ", game._id);
       }
       if (!game.userChoices?.some((choice) => choice.userId === "Sammy")) {
         await sammyChoice(game, db);
-        console.log("Added Sammy choice for game ", game._id);
       }
     })
   );
@@ -103,7 +96,13 @@ export const updateCurrentWeek = async (newWeekOrConfig: number | WeekConfig) =>
     {},
     { $set: newSeason === undefined ? { week: newWeek } : { week: newWeek, season: newSeason } }
   );
-  console.log("updated week: " + updatedWeek);
+  if (updatedWeek.modifiedCount > 0) {
+    logInfo("week.changed", {
+      week: newWeek,
+      ...(newSeason === undefined ? {} : { season: newSeason }),
+      ...(session.user?.name ? { userId: session.user.name } : {}),
+    });
+  }
   await client.close();
   return updatedWeek;
 };
@@ -111,7 +110,6 @@ export const updateGameInDb = async (game: Game) => {
   const client = await connectToDatabase();
   const db: Db = client.db(process.env.MONGODB_DB || "picks");
   const updatedGame = await db.collection<Game>("games").updateOne({ _id: game._id as any }, { $set: game });
-  console.log("updated game: " + updatedGame);
   await client.close();
   return updatedGame;
 };
@@ -145,23 +143,30 @@ export const getAllGames = async (season: number): Promise<WithId<Game>[]> => {
 
 export async function connectToDatabase(): Promise<MongoClient> {
   const options: any = {};
-  if (process.env.DEV_MODE === 'true') {
+  if (isDebugEnabled()) {
     options.monitorCommands = true;
   }
   const client = new MongoClient(uri, options);
   
-  if (process.env.DEV_MODE === 'true') {
+  if (isDebugEnabled()) {
     client.on('commandStarted', (event: any) => {
-      const url = `mongodb://${process.env.MONGODB_SERVER}/${process.env.MONGODB_DB || "picks"}`;
-      let data = "none";
-      try { data = JSON.stringify(event.command); } catch(e) { data = "Unparseable"; }
-      console.log(`[EXTERNAL_CALL] URL: ${url} | Data: ${event.commandName} ${data}`);
+      logDebug("mongodb.command.started", {
+        command: event.commandName,
+        database: event.databaseName,
+      });
     });
     client.on('commandSucceeded', (event: any) => {
-      console.log(`[EXTERNAL_CALL] Return Code: SUCCESS (${event.duration}ms)`);
+      logDebug("mongodb.command.succeeded", {
+        command: event.commandName,
+        durationMs: event.duration,
+      });
     });
     client.on('commandFailed', (event: any) => {
-      console.log(`[EXTERNAL_CALL] Return Code: ERROR (${event.failure})`);
+      logDebug("mongodb.command.failed", {
+        command: event.commandName,
+        durationMs: event.duration,
+        failure: event.failure?.message || String(event.failure),
+      });
     });
   }
 
@@ -172,24 +177,26 @@ export async function connectToDatabase(): Promise<MongoClient> {
 export async function addGames(games: Game[]) {
   const week = await getCurrentWeek();
   const season = week.season;
-  console.log("Adding games for season and week", season, week.week);
   try {
     await Promise.all(
       games.map(async (game) => {
         const client = await connectToDatabase();
-        const db: Db = client.db(process.env.MONGODB_DB || "picks");
-        game.season = season;
-        const insertResult = await db.collection<Game>("games").insertOne(game);
-        if (insertResult.acknowledged) {
-          console.log("Inserted game: ", game._id);
-          await npcChoices(game, db);
+        try {
+          const db: Db = client.db(process.env.MONGODB_DB || "picks");
+          game.season = season;
+          const insertResult = await db.collection<Game>("games").insertOne(game);
+          if (insertResult.acknowledged) {
+            await npcChoices(game, db);
+          }
+        } finally {
+          await client.close();
         }
-        await client.close();
       })
     );
-    console.log("All games added successfully.");
+    logInfo("games.added", { gameCount: games.length, week: week.week, season });
   } catch (error) {
-    console.error("Error adding games:", error);
+    logError("games.add_failed", error, { gameCount: games.length, week: week.week, season });
+    throw error;
   }
 }
 
@@ -245,38 +252,50 @@ async function npcChoices(game: Game, db: Db) {
 }
 
 export async function addUserChoices(choices: UserChoice[]) {
-  const client = await connectToDatabase();
-  const db: Db = client.db(process.env.MONGODB_DB || "picks");
-  const gameIds = choices.map((choice) => choice.gameId);
-  const games = await db
-    .collection<Game>("games")
-    .find({ _id: { $in: gameIds as any[] } })
-    .project({ _id: 1, startTime: 1 })
-    .toArray();
-  const gamesById = new Map(games.map((game) => [String(game._id), game]));
-
-  for (const choice of choices) {
-    const game = gamesById.get(String(choice.gameId));
-    if (!game) {
-      await client.close();
-      throw new Error(`Game ${choice.gameId} was not found.`);
-    }
-    if (new Date(game.startTime).getTime() <= Date.now()) {
-      await client.close();
-      throw new Error(`Game ${choice.gameId} has already started.`);
-    }
+  const session = await auth();
+  const userId = session?.user?.name;
+  if (!userId) {
+    throw new Error("You must be signed in to submit picks.");
+  }
+  if (!Array.isArray(choices) || choices.some((choice) => !choice || choice.userId !== userId)) {
+    throw new Error("You can only submit picks for your own account.");
   }
 
-  const operations = choices.map((choice) => ({
-    updateOne: {
-      filter: { gameId: choice.gameId, userId: choice.userId },
-      update: { $set: { choice: choice.choice, selectionTime: choice.selectionTime, adminOverride: false } },
-      upsert: true,
-    },
-  }));
-  const writeResult = await db.collection<UserChoice>("userChoices").bulkWrite(operations);
-  await client.close();
-  return JSON.stringify(writeResult);
+  const client = await connectToDatabase();
+  try {
+    const db: Db = client.db(process.env.MONGODB_DB || "picks");
+    const gameIds = choices.map((choice) => choice.gameId);
+    const games = await db
+      .collection<Game>("games")
+      .find({ _id: { $in: gameIds as any[] } })
+      .project({ _id: 1, startTime: 1, week: 1, season: 1 })
+      .toArray();
+    const gamesById = new Map(games.map((game) => [String(game._id), game]));
+
+    for (const choice of choices) {
+      const game = gamesById.get(String(choice.gameId));
+      if (!game) {
+        throw new Error(`Game ${choice.gameId} was not found.`);
+      }
+      if (new Date(game.startTime).getTime() <= Date.now()) {
+        throw new Error(`Game ${choice.gameId} has already started.`);
+      }
+    }
+
+    const operations = choices.map((choice) => ({
+      updateOne: {
+        filter: { gameId: choice.gameId, userId: choice.userId },
+        update: { $set: { choice: choice.choice, selectionTime: choice.selectionTime, adminOverride: false } },
+        upsert: true,
+      },
+    }));
+    const writeResult = await db.collection<UserChoice>("userChoices").bulkWrite(operations);
+    const periods = [...new Map(games.map((game) => [`${game.season}-${game.week}`, { season: game.season, week: game.week }])).values()];
+    logInfo("picks.saved", { userId, pickCount: choices.length, periods });
+    return JSON.stringify(writeResult);
+  } finally {
+    await client.close();
+  }
 }
 
 export async function getPickableGames(week: { week: number; season: number }): Promise<WithId<Game>[]> {

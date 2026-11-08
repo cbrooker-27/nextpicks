@@ -21,6 +21,7 @@ export default function MakePicksForm(props) {
     props.games.every((game) => new Date(game.startTime) <= new Date() || game.userChoice),
   );
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -32,8 +33,6 @@ export default function MakePicksForm(props) {
   }
 
   function choiceChanged(index, choice) {
-    console.log(`Game: ${games[index]._id}, Choice: ${choice}`);
-
     const updatedGames = [...games];
     updatedGames[index].userChoice = choice;
     setGames(updatedGames);
@@ -56,10 +55,16 @@ export default function MakePicksForm(props) {
         selectionTime: selectionTime,
       });
     });
-    await addUserChoices(choices);
-    setSubmitting(false);
-    setReadyToSubmit(false);
-    router.push("/picks/view");
+    setSubmitError(null);
+    try {
+      await addUserChoices(choices);
+      setReadyToSubmit(false);
+      router.push("/picks/view");
+    } catch {
+      setSubmitError("Unable to submit your picks. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (!games) return <p>No game data</p>;
@@ -68,6 +73,7 @@ export default function MakePicksForm(props) {
     <div>
       <div>
         <h1>Make Your Picks</h1>
+        {submitError && <p role="alert">{submitError}</p>}
         {readyToSubmit && (
           <Fab
             style={{

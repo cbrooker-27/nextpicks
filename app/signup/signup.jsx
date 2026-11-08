@@ -1,11 +1,10 @@
 'use client'
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 import classes from './page.module.css';
 
 async function createUser(name, password) {
-    console.log('name:'+name)
   const response = await fetch('/api/picks/signup', {
     method: 'POST',
     body: JSON.stringify({ name, password }),
@@ -26,6 +25,8 @@ async function createUser(name, password) {
 function SignUp() {
   const nameInputRef = useRef();
   const passwordInputRef = useRef();
+  const [message, setMessage] = useState('');
+  const [hasError, setHasError] = useState(false);
 
   async function submitHandler(event) {
     event.preventDefault();
@@ -33,20 +34,22 @@ function SignUp() {
     const enteredName = nameInputRef.current.value;
     const enteredPassword = passwordInputRef.current.value;
 
-    // optional: Add validation
-
-      try {
-        const result = await createUser(enteredName, enteredPassword);
-        console.log(result);
-      } catch (error) {
-        console.log(error);
-      }
+    setMessage('');
+    setHasError(false);
+    try {
+      await createUser(enteredName, enteredPassword);
+      setMessage('Account created successfully.');
+    } catch (error) {
+      setHasError(true);
+      setMessage(error instanceof Error ? error.message : 'Unable to create account.');
+    }
   }
 
   return (
     <section className={classes.auth}>
       <h1>Sign Up</h1>
       <form onSubmit={submitHandler}>
+        {message && <p role={hasError ? 'alert' : 'status'}>{message}</p>}
         <div className={classes.control}>
           <label htmlFor='name'>Your Name</label>
           <input type='text' id='name' required ref={nameInputRef} />

@@ -38,7 +38,6 @@ export default function SpreadChart({ stats = [] }) {
     { label: "Fav Away UU", dataKey: "favAwayUU", color: "#af08afff", stack: "FAVAY" },
   ];
 
-  console.log(dataset, series);
   return (
     <Box sx={{ mb: 2 }}>
       <Typography variant="h6" sx={{ mb: 1 }}>

@@ -73,7 +73,6 @@ export async function getUserStatsForStandings(week: { week: number; season: num
           user["possiblePoints"+i] += 2;
         } else if (game.playedStatus === "LIVE") {
           user["weekLive" + i] += gamePoints[userChoice?.choice] || 0;
-          //console.log("Game in progress, no points awarded yet...should not get here");
         }
       });
     });

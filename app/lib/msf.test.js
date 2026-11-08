@@ -8,6 +8,7 @@ import {
 import * as dbUtils from "@/app/utils/db";
 import { recordMsfRequest } from "@/app/lib/msfTeamStatsMetrics";
 import { after } from "next/server";
+import { isMsfRequestLog, spyOnConsole } from "@/app/testUtils/console";
 
 jest.mock("@/app/utils/db", () => ({
   getCurrentWeek: jest.fn(),
@@ -146,7 +147,8 @@ describe("msf.js", () => {
   });
 
   it("logs each team statistics request and its successful result", async () => {
-    const info = jest.spyOn(console, "info").mockImplementation(() => {});
+    process.env.LOG_LEVEL = "debug";
+    const debug = spyOnConsole("debug", isMsfRequestLog);
     fetch.mockResolvedValueOnce({
       status: 200,
       ok: true,
@@ -165,19 +167,19 @@ describe("msf.js", () => {
       data: [{ _id: 10, wins: 10 }],
     });
 
-    expect(info).toHaveBeenCalledTimes(2);
-    expect(JSON.parse(info.mock.calls[0][0])).toMatchObject({
+    expect(debug).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(debug.mock.calls[0][0])).toMatchObject({
       event: "msf_team_stats_request",
       season: 2025,
       status: "started",
     });
-    expect(JSON.parse(info.mock.calls[1][0])).toMatchObject({
+    expect(JSON.parse(debug.mock.calls[1][0])).toMatchObject({
       event: "msf_team_stats_request",
       status: "success",
       httpStatus: 200,
       resultCount: 1,
     });
-    info.mockRestore();
+    debug.mockRestore();
   });
 
   it("does not wait for metric persistence before returning team stats", async () => {
@@ -200,9 +202,8 @@ describe("msf.js", () => {
   });
 
   it("logs team statistics request timeouts explicitly", async () => {
-    const info = jest.spyOn(console, "info").mockImplementation(() => {});
-    const error = jest.spyOn(console, "error").mockImplementation(() => {});
-    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    process.env.LOG_LEVEL = "debug";
+    const debug = spyOnConsole("debug", isMsfRequestLog);
     jest.useFakeTimers();
     fetch.mockImplementationOnce((_url, options) => new Promise((_resolve, reject) => {
       options.signal.addEventListener("abort", () => reject(new Error("aborted")));
@@ -218,7 +219,7 @@ describe("msf.js", () => {
       pending: true,
     });
 
-    expect(JSON.parse(info.mock.calls[0][0])).toMatchObject({
+    expect(JSON.parse(debug.mock.calls[0][0])).toMatchObject({
       event: "msf_team_stats_request",
       status: "started",
     });
@@ -227,8 +228,8 @@ describe("msf.js", () => {
     await jest.advanceTimersByTimeAsync(1);
     await backgroundWork;
 
-    expect(error).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(error.mock.calls[0][0])).toMatchObject({
+    expect(debug).toHaveBeenCalledTimes(3);
+    expect(JSON.parse(debug.mock.calls[2][0])).toMatchObject({
       event: "msf_team_stats_request",
       status: "timeout",
       error: { name: "TimeoutError" },
@@ -242,13 +243,12 @@ describe("msf.js", () => {
         error: expect.objectContaining({ name: "TimeoutError" }),
       }),
     );
-    info.mockRestore();
-    error.mockRestore();
-    warn.mockRestore();
+    debug.mockRestore();
   });
 
   it("caps the team statistics timeout below the Vercel function deadline", async () => {
-    const info = jest.spyOn(console, "info").mockImplementation(() => {});
+    process.env.LOG_LEVEL = "debug";
+    const debug = spyOnConsole("debug", isMsfRequestLog);
     process.env.MSF_TIMEOUT_MS = "30000";
     fetch.mockResolvedValueOnce({
       status: 200,
@@ -258,17 +258,15 @@ describe("msf.js", () => {
 
     await getTeamStatisticsFromMsfWithStatus({ season: 2025, week: 4 });
 
-    expect(JSON.parse(info.mock.calls[0][0])).toMatchObject({
+    expect(JSON.parse(debug.mock.calls[0][0])).toMatchObject({
       event: "msf_team_stats_request",
       timeoutMs: 7000,
       status: "started",
     });
-    info.mockRestore();
+    debug.mockRestore();
   });
 
   it("returns after the page wait and records the eventual team statistics response", async () => {
-    const info = jest.spyOn(console, "info").mockImplementation(() => {});
-    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     let resolveFetch;
     fetch.mockImplementationOnce(
       () =>
@@ -321,13 +319,9 @@ describe("msf.js", () => {
         requestId: expect.any(String),
       }),
     );
-    info.mockRestore();
-    warn.mockRestore();
   });
 
   it("captures the HTTP status and error body from a late team statistics response", async () => {
-    const error = jest.spyOn(console, "error").mockImplementation(() => {});
-    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     let resolveFetch;
     fetch.mockImplementationOnce(
       () =>
@@ -357,12 +351,11 @@ describe("msf.js", () => {
         requestId: expect.any(String),
       }),
     );
-    error.mockRestore();
-    warn.mockRestore();
   });
 
   it("logs HTTP errors with their status code", async () => {
-    const error = jest.spyOn(console, "error").mockImplementation(() => {});
+    process.env.LOG_LEVEL = "debug";
+    const debug = spyOnConsole("debug", isMsfRequestLog);
     fetch.mockResolvedValueOnce({
       status: 503,
       ok: false,
@@ -374,8 +367,8 @@ describe("msf.js", () => {
       source: "unavailable",
     });
 
-    expect(error).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(error.mock.calls[0][0])).toMatchObject({
+    expect(debug).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(debug.mock.calls[1][0])).toMatchObject({
       event: "msf_team_stats_request",
       status: "error",
       httpStatus: 503,
@@ -390,7 +383,7 @@ describe("msf.js", () => {
         responseBody: JSON.stringify({ errorCode: "UPSTREAM_BUSY" }),
       }),
     );
-    error.mockRestore();
+    debug.mockRestore();
   });
 
   it("uses the latest full-game spread to return each game's favorite and spread", async () => {
@@ -468,7 +461,6 @@ describe("msf.js", () => {
   });
 
   it("returns no spreads when the odds feed is unavailable", async () => {
-    const error = jest.spyOn(console, "error").mockImplementation(() => {});
     fetch.mockResolvedValueOnce({ status: 503, ok: false });
 
     await expect(getGameSpreadsFromMsfWithStatus({ season: 2025, week: 1 })).resolves.toMatchObject({
@@ -482,11 +474,9 @@ describe("msf.js", () => {
         httpStatus: 503,
       }),
     );
-    error.mockRestore();
   });
 
   it("returns no games when the MSF request is aborted", async () => {
-    const error = jest.spyOn(console, "error").mockImplementation(() => {});
     fetch.mockImplementationOnce((_url, options) => {
       options.signal.addEventListener("abort", () => {});
       return new Promise((_resolve, reject) => {
@@ -507,11 +497,9 @@ describe("msf.js", () => {
         error: expect.objectContaining({ name: "TimeoutError" }),
       }),
     );
-    error.mockRestore();
   });
 
   it("returns no games when the MSF request fails", async () => {
-    const error = jest.spyOn(console, "error").mockImplementation(() => {});
     fetch.mockRejectedValueOnce(new Error("MSF unavailable"));
 
     await expect(getGamesForWeekFromMsf({ season: 2025, week: 1 })).resolves.toEqual([]);
@@ -525,6 +513,5 @@ describe("msf.js", () => {
         error: expect.objectContaining({ message: "MSF unavailable" }),
       }),
     );
-    error.mockRestore();
   });
 });

@@ -7,6 +7,7 @@ import { signInSchema } from "./app/lib/zod";
 // Your own logic for dealing with plaintext password strings; be careful!
 import { saltAndHashPassword } from "@/app/utils/password";
 import { getUserFromDb, getUserFromDbWithEmail, updateUser } from "@/app/utils/db";
+import { logInfo, logWarn } from "@/app/lib/logger";
 import { ZodError } from "zod";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -14,15 +15,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: MongoDBAdapter(client),
   callbacks: {
     async signIn(props) {
-      console.log("1", props);
       let user = props.user;
-      console.log("2", user);
       if (props.account.provider !== "credentials") {
-        console.log("3", "not credentials");
         user = await getUserFromDbWithEmail(props.user.email);
-        console.log("4", user);
         if (!user) {
-          console.log("5", "not found");
+          logWarn("auth.login.denied", {
+            provider: props.account?.provider || "unknown",
+            reason: "user_not_found",
+          });
           return false;
         }
 
@@ -34,6 +34,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       user.lastSignIn = new Date();
       await updateUser(user);
 
+      logInfo("auth.login.succeeded", {
+        provider: props.account?.provider || "unknown",
+        userId: user.id || String(user._id),
+      });
       return true;
     },
   },
@@ -58,8 +62,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           user = await getUserFromDb(username, pwHash);
 
           if (!user) {
-            // No user found, so this is their first attempt to login
-            // Optionally, this is also the place you could do a user registration
+            logWarn("auth.login.denied", { provider: "credentials", reason: "invalid_credentials" });
             throw new Error("Invalid credentials.");
           }
 

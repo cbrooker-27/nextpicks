@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { SeasonStatisticsProvider, useSeasonStatistics } from './SeasonStatistics';
 import React from 'react';
+import { spyOnConsole } from '../testUtils/console';
 
 const TestComponent = () => {
   const ctx = useSeasonStatistics();
@@ -21,7 +22,10 @@ describe('SeasonStatisticsContext', () => {
   });
 
   it('warns when used outside of provider', () => {
-    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleSpy = spyOnConsole(
+      'warn',
+      (message) => message === 'useSeasonStatistics must be used within a SeasonStatisticsProvider',
+    );
     
     render(<TestComponent />);
     

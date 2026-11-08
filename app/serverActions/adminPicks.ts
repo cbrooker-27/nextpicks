@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb";
 import { auth } from "../../auth";
 import { isAdminEmail } from "../lib/admin";
 import { connectToDatabase } from "../utils/db";
+import { logInfo } from "../lib/logger";
 
 type PickChoice = "ff" | "uf" | "uu";
 
@@ -23,6 +24,7 @@ async function requireAdmin() {
   if (!isAdminEmail(session?.user?.email)) {
     throw new Error("You are not authorized to manage player picks.");
   }
+  return session;
 }
 
 function assertWeekAndSeason(week: number, season: number) {
@@ -119,7 +121,7 @@ export async function saveAdminOverridePicks({
   userId: string;
   picks: { gameId: string; choice: PickChoice }[];
 }) {
-  await requireAdmin();
+  const session = await requireAdmin();
   assertWeekAndSeason(week, season);
   if (typeof userId !== "string" || !userId.trim()) throw new Error("A player is required.");
   if (!Array.isArray(picks) || picks.length === 0) throw new Error("Choose at least one pick to save.");
@@ -174,6 +176,13 @@ export async function saveAdminOverridePicks({
         };
       }),
     );
+    logInfo("admin_picks.saved", {
+      ...(session.user?.name ? { adminUserId: session.user.name } : {}),
+      userId,
+      week,
+      season,
+      pickCount: picks.length,
+    });
     return { modifiedCount: result.modifiedCount, upsertedCount: result.upsertedCount };
   } finally {
     await client.close();

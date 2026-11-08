@@ -2,7 +2,7 @@
 import { addGames } from "@/app/utils/db";
 import AddGameTile from "../../components/games/addGameTile";
 import { useState } from "react";
-import { CircularProgress, Fab } from "@mui/material";
+import { Alert, CircularProgress, Fab } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import styles from "./addGamesForm.module.css";
@@ -29,6 +29,7 @@ export default function AddGamesForm(props) {
     () => games.length > 0 && games.every((game) => game.spread != null),
   );
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const router = useRouter();
 
   function emptySpread(game) {
@@ -36,13 +37,17 @@ export default function AddGamesForm(props) {
   }
   async function submitClicked(event) {
     event.preventDefault();
-    console.log("adding games");
     setSubmitting(true);
-    console.log(games);
-    const result = await addGames(games);
-    setSubmitting(false);
-    setReadyToSubmit(false);
-    router.push("/picks/view");
+    setSubmitError(null);
+    try {
+      await addGames(games);
+      setReadyToSubmit(false);
+      router.push("/picks/view");
+    } catch {
+      setSubmitError("Unable to add games. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function gameSpreadUpdated(index, event) {
@@ -65,6 +70,7 @@ export default function AddGamesForm(props) {
     <div className={styles.form}>
       <div className={styles.header}>
         <h1>Add Games</h1>
+        {submitError && <Alert severity="error">{submitError}</Alert>}
         {readyToSubmit && (
           <Fab
             style={{

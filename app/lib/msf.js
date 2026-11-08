@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { after } from "next/server";
 import { getCurrentWeek } from "@/app/utils/db";
 import { recordMsfRequest, recordPendingMsfRequest } from "@/app/lib/msfTeamStatsMetrics";
+import { logDebug } from "@/app/lib/logger";
 
 const MAX_MSF_TIMEOUT_MS = 7000;
 const MAX_MSF_DIAGNOSTIC_TIMEOUT_MS = 50000;
@@ -98,34 +99,23 @@ async function logMsfRequest({
     week: week.week,
     ...(requestId ? { requestId } : {}),
   };
-  if (status === "success") {
-    console.info(
-      JSON.stringify({
-        ...logContext,
-        status,
-        durationMs,
-        httpStatus,
-        resultCount,
-      }),
-    );
-  } else {
-    const errorName = error instanceof Error ? error.name : typeof error;
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(
-      JSON.stringify({
-        ...logContext,
-        status,
-        durationMs,
-        httpStatus,
-        responseBody: error?.responseBody,
-        error: {
-          name: errorName,
-          message: errorMessage,
-          ...(error?.responseBodyReadError ? { responseBodyReadError: error.responseBodyReadError } : {}),
-        },
-      }),
-    );
-  }
+  logDebug(logContext.event, {
+    season: week.season,
+    week: week.week,
+    ...(requestId ? { requestId } : {}),
+    status,
+    durationMs,
+    httpStatus,
+    resultCount,
+    ...(error
+      ? {
+          error: {
+            name: error instanceof Error ? error.name : typeof error,
+            message: error instanceof Error ? error.message : String(error),
+          },
+        }
+      : {}),
+  });
   const metric = {
     requestId,
     requestType,
@@ -211,15 +201,6 @@ async function resolveTeamStatsRequest({ week, startedAt, requestId, outcome, pe
 export async function getGamesForWeekFromMsfWithStatus(week) {
   const startedAt = Date.now();
   const timeoutMs = getMsfTimeoutMs();
-  console.info(
-    JSON.stringify({
-      event: "msf_games_request",
-      season: week.season,
-      week: week.week,
-      timeoutMs,
-      status: "started",
-    }),
-  );
   try {
     const msfUrl =
       "" +
@@ -233,15 +214,10 @@ export async function getGamesForWeekFromMsfWithStatus(week) {
       week.week +
       "/games.json";
     const headers = getMSFHeaders();
-    if (process.env.DEV_MODE === "true") {
-      console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
-    }
+    logDebug("msf_games_request", { season: week.season, week: week.week, timeoutMs, status: "started", url: msfUrl });
     const result = await fetchFromMsf(msfUrl, headers);
     const response = result.response;
     const resJson = result.data;
-    if (process.env.DEV_MODE === "true") {
-      console.log(`[EXTERNAL_CALL] Return Code: ${response.status}`);
-    }
     const games = resJson.games;
     const teams = resJson.references.teamReferences;
     const simpleGames = games.map((game) => {
@@ -274,7 +250,6 @@ export async function getGamesForWeekFromMsfWithStatus(week) {
     });
     return { data: simpleGames, source: "live" };
   } catch (error) {
-    console.error("Error fetching games from MSF:", error);
     const status = error instanceof Error && error.name === "TimeoutError" ? "timeout" : "error";
     await logMsfRequest({
       requestType: "games",
@@ -305,15 +280,12 @@ export async function getTeamStatisticsFromMsfWithStatus(week) {
     timeoutMs,
     diagnosticTimeoutMs,
   };
-  console.info(JSON.stringify({ ...logContext, status: "started" }));
   try {
     const msfUrl = `${process.env.MYSPORTSFEED_BASE_URL}${week.season}-${
       week.season + 1
     }-regular/standings.json?stats=W,L,T,PF,PA`;
     const headers = getMSFHeaders();
-    if (process.env.DEV_MODE === "true") {
-      console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
-    }
+    logDebug("msf_team_stats_request", { ...logContext, status: "started", url: msfUrl });
     const requestId = randomUUID();
     const requestPromise = fetchFromMsf(msfUrl, headers, diagnosticTimeoutMs).then(
       (result) => ({ result }),
@@ -340,14 +312,12 @@ export async function getTeamStatisticsFromMsfWithStatus(week) {
         week: week.week,
         timeoutMs: diagnosticTimeoutMs,
       });
-      console.warn(
-        JSON.stringify({
-          ...logContext,
-          status: "pending",
-          message: "MSF response exceeded the page wait; continuing in the background.",
-          requestId,
-        }),
-      );
+      logDebug("msf_team_stats_request", {
+        ...logContext,
+        status: "pending",
+        message: "MSF response exceeded the page wait; continuing in the background.",
+        requestId,
+      });
       const finalOutcome = await requestPromise;
       await resolveTeamStatsRequest({
         week,
@@ -449,24 +419,12 @@ function getGameSpread(gameLines) {
 export async function getGameSpreadsFromMsfWithStatus(week) {
   const startedAt = Date.now();
   const timeoutMs = getMsfTimeoutMs();
-  console.info(
-    JSON.stringify({
-      event: "msf_odds_request",
-      season: week.season,
-      week: week.week,
-      timeoutMs,
-      status: "started",
-    }),
-  );
-
   try {
     const msfUrl = `${process.env.MYSPORTSFEED_BASE_URL}${week.season}-${
       week.season + 1
     }-regular/week/${week.week}/odds_gamelines.json?force=true`;
     const headers = getMSFHeaders();
-    if (process.env.DEV_MODE === "true") {
-      console.log(`[EXTERNAL_CALL] URL: ${msfUrl} | Data: GET (none)`);
-    }
+    logDebug("msf_odds_request", { season: week.season, week: week.week, timeoutMs, status: "started", url: msfUrl });
 
     const result = await fetchFromMsf(msfUrl, headers);
     const spreadsByGameId = {};

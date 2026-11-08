@@ -1,4 +1,5 @@
 import { connectToDatabase } from "@/app/utils/db";
+import { logError } from "@/app/lib/logger";
 
 const METRICS_ID = "msf_team_stats";
 const RECENT_FAILURE_LIMIT = 50;
@@ -39,7 +40,7 @@ export async function recordPendingMsfRequest({ requestId, requestType, season, 
       await client.close();
     }
   } catch (persistenceError) {
-    console.error("Unable to persist pending MSF request:", persistenceError);
+    logError("msf.pending_request_persist_failed", persistenceError);
   }
 }
 
@@ -128,7 +129,7 @@ export async function recordMsfRequest({
       await client.close();
     }
   } catch (persistenceError) {
-    console.error("Unable to persist MSF request metrics:", persistenceError);
+    logError("msf.request_metrics_persist_failed", persistenceError);
   }
 }
 
