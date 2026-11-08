@@ -1,6 +1,8 @@
 /** @jest-environment node */
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
+jest.mock('../../../../auth', () => ({ auth: jest.fn() }));
+
 let mongoServer;
 let POST;
 let connectToDatabase;

@@ -1,5 +1,4 @@
 "use client";
-import { getGamesForWeekFromMsf } from "@/app/lib/msf";
 import { getCurrentWeek, getPickedGames, getThisYearsActiveUsers } from "@/app/utils/db";
 import { Chip, Avatar, Tooltip, Switch, FormControlLabel, Box } from "@mui/material";
 import { LineChart } from "@mui/x-charts";
