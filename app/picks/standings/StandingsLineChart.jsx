@@ -9,10 +9,7 @@ export default function StandingsLineChart({ userStats = [], maxWeek = 0, maxSer
   const topUsers = [...userStats].sort((a, b) => b.totalPoints - a.totalPoints).slice(0, maxSeries);
 
   const series = topUsers.map((u) => {
-    const data = [];
-    for (let i = 1; i <= maxWeek; i++) {
-      data.push({ x: `W${i}`, y: Number(u[`week${i}`] || 0) });
-    }
+    const data = Array.from({ length: maxWeek }, (_, index) => Number(u[`week${index + 1}`] || 0));
     return {
       label: u.name,
       data,
@@ -31,7 +28,7 @@ export default function StandingsLineChart({ userStats = [], maxWeek = 0, maxSer
       </Typography>
       <LineChart
         series={series}
-        xAxis={[{ data: Array.from({ length: 17 }, (_, i) => String("W" + (i + 1))) }]}
+        xAxis={[{ scaleType: "point", data: Array.from({ length: maxWeek }, (_, i) => `W${i + 1}`) }]}
         yAxis={[{ min: 0, label: "Points" }]}
         height={420}
         // tooltip
