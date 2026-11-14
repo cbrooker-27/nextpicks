@@ -1,7 +1,13 @@
 "use client";
 
 import { getMsfFeed } from "@/app/lib/msfClient";
-import { getCurrentWeek, getPickedGames, getThisYearsActiveUsers, getAllGames } from "@/app/utils/db";
+import {
+  getCurrentWeek,
+  getPickedGames,
+  getThisYearsActiveUsers,
+  getAllGames,
+  getLatestTeamRecordSnapshot,
+} from "@/app/utils/db";
 import { useSearchParams } from "next/navigation";
 import GameScoreTile from "@/app/components/games/gameScoreTile";
 import {
@@ -34,7 +40,7 @@ const INITIAL_CALL_STATUSES = [
   { key: "users", label: "Load the player list", status: "loading" },
   { key: "season", label: "Load season game history", status: "loading" },
   { key: "scores", label: "Refresh live game scores", status: "loading" },
-  { key: "teams", label: "Getting team records", status: "loading" },
+  { key: "teams", label: "Loading local team-record snapshot", status: "loading" },
 ];
 
 export default function ViewPicks() {
@@ -46,6 +52,7 @@ export default function ViewPicks() {
   const [includeNpc, setIncludeNpc] = useState(true);
   const [includeAdminPicks, setIncludeAdminPicks] = useState(true);
   const [teamDetails, setTeamDetails] = useState([]);
+  const [teamRecordsMessage, setTeamRecordsMessage] = useState("");
   const [seasonData, setSeasonData] = useState([]);
   const [week, setWeek] = useState(null);
   const [loadError, setLoadError] = useState(null);
@@ -94,6 +101,7 @@ export default function ViewPicks() {
       setElapsedMs(0);
       setIsLoading(true);
       setLoadError(null);
+      setTeamRecordsMessage("");
       const week = weekParam ? { week: Number(weekParam), season: currentWeek.season } : currentWeek;
       setWeek(week);
 
@@ -137,15 +145,19 @@ export default function ViewPicks() {
           if (isMounted) setCallStatus("season", "failed");
         });
 
-      void getMsfFeed("team-stats", week)
+      void getLatestTeamRecordSnapshot(week.season)
         .then((result) => {
           if (!isMounted) return;
-          setTeamDetails(result.data || []);
-          setCallStatus("teams", result.source === "unavailable" ? "failed" : "success");
+          setTeamDetails(result?.teams || []);
+          setTeamRecordsMessage(result ? "" : "Team records are not available for this season.");
+          setCallStatus("teams", result ? "success" : "failed");
         })
         .catch((error) => {
-          console.error("Error loading MSF team standings:", error);
-          if (isMounted) setCallStatus("teams", "failed");
+          console.error("Error loading local team-record snapshot:", error);
+          if (isMounted) {
+            setTeamRecordsMessage("Team records could not be loaded.");
+            setCallStatus("teams", "failed");
+          }
         });
 
       if (week.week === currentWeek.week) {
@@ -259,6 +271,7 @@ export default function ViewPicks() {
         <div role="alert">{loadError}</div>
       ) : (
         <div>
+      {teamRecordsMessage && <div role="status">{teamRecordsMessage}</div>}
       <Dialog
         open={showScoreFailureDialog}
         onClose={() => setShowScoreFailureDialog(false)}

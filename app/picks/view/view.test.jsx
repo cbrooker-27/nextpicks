@@ -2,7 +2,7 @@ import React from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import ViewPicks from "./view";
 import { getMsfFeed } from "@/app/lib/msfClient";
-import { getPickedGames, getThisYearsActiveUsers } from "@/app/utils/db";
+import { getPickedGames, getThisYearsActiveUsers, getLatestTeamRecordSnapshot } from "@/app/utils/db";
 import { spyOnConsole } from "@/app/testUtils/console";
 
 jest.mock("next/navigation", () => ({
@@ -41,11 +41,16 @@ jest.mock("@/app/utils/db", () => ({
   ),
   getThisYearsActiveUsers: jest.fn().mockResolvedValue("[]"),
   getAllGames: jest.fn().mockResolvedValue([]),
+  getLatestTeamRecordSnapshot: jest.fn().mockResolvedValue({ teams: [] }),
 }));
 
 jest.mock("@/app/components/games/gameScoreTile", () => {
-  function MockGameScoreTile({ game, liveDetails }) {
-    return <div data-testid="game-score">{`${game.home.name}: ${liveDetails.homeScore}`}</div>;
+  function MockGameScoreTile({ game, liveDetails, teamDetails }) {
+    return (
+      <div data-testid="game-score" data-team-count={teamDetails.length}>
+        {`${game.home.name}: ${liveDetails.homeScore}`}
+      </div>
+    );
   }
 
   return MockGameScoreTile;
@@ -68,12 +73,14 @@ describe("ViewPicks incremental loading", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     getMsfFeed.mockImplementation(() => new Promise(() => {}));
+    getLatestTeamRecordSnapshot.mockResolvedValue({ teams: [] });
   });
 
   it("renders Mongo game data before MSF requests resolve", async () => {
     render(<ViewPicks />);
 
-    const summary = screen.getByRole("button", { name: /0 of 6 calls succeeded/ });
+    expect(screen.getByRole("button", { name: /0 of 6 calls succeeded/ })).toHaveAttribute("aria-expanded", "true");
+    const summary = await screen.findByRole("button", { name: /5 of 6 calls succeeded/ });
     expect(summary).toHaveAttribute("aria-expanded", "true");
     expect(screen.queryByRole("switch", { name: "Show points from admin picks" })).not.toBeInTheDocument();
     expect(screen.getByText("Refresh live game scores")).toBeInTheDocument();
@@ -106,7 +113,8 @@ describe("ViewPicks incremental loading", () => {
     expect(summary).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("refreshes scores while team records are still pending", async () => {
+  it("refreshes scores while local team records are still pending without requesting them from MSF", async () => {
+    getLatestTeamRecordSnapshot.mockImplementation(() => new Promise(() => {}));
     getMsfFeed.mockImplementation((feed) =>
       feed === "games"
         ? Promise.resolve({ data: [{ _id: 101, homeScore: 25 }], source: "live" })
@@ -116,40 +124,53 @@ describe("ViewPicks incremental loading", () => {
     render(<ViewPicks />);
 
     expect(await screen.findByText("Cowboys: 25")).toBeInTheDocument();
-    expect(screen.getByText("Getting team records")).toBeInTheDocument();
+    expect(screen.getByText("Loading local team-record snapshot")).toBeInTheDocument();
     expect(getMsfFeed).toHaveBeenCalledWith("games", { week: 1, season: 2025 });
-    expect(getMsfFeed).toHaveBeenCalledWith("team-stats", { week: 1, season: 2025 });
+    expect(getLatestTeamRecordSnapshot).toHaveBeenCalledWith(2025);
+    expect(getMsfFeed).not.toHaveBeenCalledWith("team-stats", expect.anything());
   });
 
-  it("settles the team-record status when its browser request times out", async () => {
-    spyOnConsole(
-      "error",
-      (message, error) =>
-        message === "Error loading MSF team standings:" &&
-        error instanceof Error &&
-        error.message === "team stats timed out",
-    );
-    jest.useFakeTimers();
-    getMsfFeed.mockImplementation((feed) =>
-      feed === "games"
-        ? Promise.resolve({ data: [], source: "live" })
-        : new Promise((_, reject) => setTimeout(() => reject(new Error("team stats timed out")), 9000)),
-    );
+  it("keeps historical picks available when the local season snapshot is missing", async () => {
+    getLatestTeamRecordSnapshot.mockResolvedValue(null);
+    getMsfFeed.mockResolvedValue({ data: [], source: "live" });
 
     render(<ViewPicks />);
 
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-    expect(getMsfFeed).toHaveBeenCalledWith("team-stats", { week: 1, season: 2025 });
+    expect(await screen.findByRole("status")).toHaveTextContent("Team records are not available for this season");
+    expect(screen.getByText("Cowboys: 20")).toBeInTheDocument();
+    expect(getMsfFeed).not.toHaveBeenCalledWith("team-stats", expect.anything());
+  });
 
-    await act(async () => {
-      await jest.advanceTimersByTimeAsync(9000);
-    });
+  it("passes the active-season local snapshot to the pick view", async () => {
+    getLatestTeamRecordSnapshot.mockResolvedValue({ teams: [{ _id: 1, wins: 1 }] });
+    getMsfFeed.mockResolvedValue({ data: [], source: "live" });
 
-    expect(screen.getByRole("button", { name: /5 of 6 calls succeeded/ })).toBeInTheDocument();
-    expect(screen.getByText("Getting team records").parentElement).toHaveTextContent("Failed");
+    render(<ViewPicks />);
+
+    expect(await screen.findByTestId("game-score")).toHaveAttribute("data-team-count", "1");
+    expect(getLatestTeamRecordSnapshot).toHaveBeenCalledWith(2025);
+  });
+
+  it("reports an unreadable local snapshot without blocking the picks view", async () => {
+    spyOnConsole(
+      "error",
+      (message, error) =>
+        message === "Error loading local team-record snapshot:" &&
+        error instanceof Error &&
+        error.message === "snapshot unavailable",
+    );
+    getLatestTeamRecordSnapshot.mockRejectedValue(new Error("snapshot unavailable"));
+    getMsfFeed.mockImplementation((feed) =>
+      feed === "games"
+        ? Promise.resolve({ data: [], source: "live" })
+        : new Promise(() => {}),
+    );
+
+    render(<ViewPicks />);
+    expect(await screen.findByRole("button", { name: /5 of 6 calls succeeded/ })).toBeInTheDocument();
+    expect(screen.getByText("Loading local team-record snapshot").parentElement).toHaveTextContent("Failed");
+    expect(await screen.findByRole("status")).toHaveTextContent("Team records could not be loaded");
+    expect(screen.getByText("Cowboys: 20")).toBeInTheDocument();
   });
 
   it("subtracts admin points and marks the score when admin picks are excluded", async () => {

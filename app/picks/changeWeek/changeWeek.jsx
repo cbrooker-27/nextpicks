@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getCurrentWeek, getPickableGames, updateCurrentWeek, updateGameScoresInDb } from "../../utils/db";
+import { getCurrentWeek, getPickableGames, updateGameScoresInDb } from "../../utils/db";
+import { captureCurrentWeekTeamRecords, updateCurrentWeek } from "../../serverActions/teamRecordSnapshots";
 import { Box, Button, MenuItem, Select, FormControl, InputLabel, Skeleton, Typography } from "@mui/material";
 import { getGamesForWeekFromMsfWithStatus } from "@/app/lib/msf";
 
@@ -14,6 +15,9 @@ const ChangeWeek = () => {
   const [gamesWithScores, setGamesWithScores] = useState([]);
   const [fetchedPicks, setFetchedPicks] = useState([]);
   const [msfUnavailable, setMsfUnavailable] = useState(false);
+  const [changeWeekError, setChangeWeekError] = useState("");
+  const [captureStatus, setCaptureStatus] = useState("");
+  const [captureInProgress, setCaptureInProgress] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -42,31 +46,52 @@ const ChangeWeek = () => {
 
   const handleSubmit = async () => {
     setUpdateInProgress(true);
-    // Before changing the week, update all games in the DB with latest scores from MSF
-    await Promise.all(
-      fetchedPicks.map((game) => {
-        const msfGameData = gamesWithScores.find((g) => g._id === game._id);
-        if (
-          msfGameData?.playedStatus === "COMPLETED" &&
-          Number.isFinite(msfGameData.awayScore) &&
-          Number.isFinite(msfGameData.homeScore)
-        ) {
-          return updateGameScoresInDb(game._id, {
-            playedStatus: msfGameData.playedStatus,
-            awayScore: msfGameData.awayScore,
-            homeScore: msfGameData.homeScore,
-          });
-        }
-      }),
-    );
-    const updateResult = await updateCurrentWeek({ week: newWeek, season: newSeason });
-    if (updateResult.modifiedCount === 1) {
-      setWeek(newWeek);
-      setSeason(newSeason);
-    } else {
-      alert("Error");
+    setChangeWeekError("");
+    try {
+      // Completed scores are safe to retry if the required snapshot cannot be captured.
+      await Promise.all(
+        fetchedPicks.map((game) => {
+          const msfGameData = gamesWithScores.find((g) => g._id === game._id);
+          if (
+            msfGameData?.playedStatus === "COMPLETED" &&
+            Number.isFinite(msfGameData.awayScore) &&
+            Number.isFinite(msfGameData.homeScore)
+          ) {
+            return updateGameScoresInDb(game._id, {
+              playedStatus: msfGameData.playedStatus,
+              awayScore: msfGameData.awayScore,
+              homeScore: msfGameData.homeScore,
+            });
+          }
+        }),
+      );
+      const updateResult = await updateCurrentWeek({ week: Number(newWeek), season: Number(newSeason) });
+      if (updateResult.modifiedCount !== 1) {
+        throw new Error("The week and season were not changed. Confirm the selected period and retry.");
+      }
+      setWeek(Number(newWeek));
+      setSeason(Number(newSeason));
+    } catch (error) {
+      console.error("Error changing the current week:", error);
+      setChangeWeekError(error instanceof Error ? error.message : "Unable to change the current week. Please retry.");
+    } finally {
+      setUpdateInProgress(false);
     }
-    setUpdateInProgress(false);
+  };
+
+  const handleCaptureCurrentWeek = async () => {
+    setCaptureInProgress(true);
+    setCaptureStatus("");
+    try {
+      const result = await captureCurrentWeekTeamRecords();
+      const outcome = result.status === "already-exists" ? "already exists" : "captured";
+      setCaptureStatus(`Week ${result.week}, ${result.season}: snapshot ${outcome} (${result.teamCount} teams).`);
+    } catch (error) {
+      console.error("Error capturing current-week team records:", error);
+      setCaptureStatus(error instanceof Error ? error.message : "Unable to capture team records. Please retry.");
+    } finally {
+      setCaptureInProgress(false);
+    }
   };
 
   return isLoading ? (
@@ -113,7 +138,27 @@ const ChangeWeek = () => {
         >
           Apply Changes
         </Button>
+        <Button
+          variant="outlined"
+          onClick={handleCaptureCurrentWeek}
+          loading={captureInProgress}
+          loadingPosition="end"
+          disabled={updateInProgress}
+          sx={{ mt: 2, ml: 1 }}
+        >
+          Capture current-week records
+        </Button>
       </div>
+      {changeWeekError && (
+        <Typography role="alert" color="error.main" sx={{ mt: 2 }}>
+          {changeWeekError} Resolve the reported issue, then retry.
+        </Typography>
+      )}
+      {captureStatus && (
+        <Typography role="status" sx={{ mt: 2 }}>
+          {captureStatus}
+        </Typography>
+      )}
       {msfUnavailable && (
         <Typography role="status" color="warning.main" sx={{ mt: 2 }}>
           MSF scores are unavailable. Any scores already saved for completed games will be kept.

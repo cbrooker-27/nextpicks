@@ -1,8 +1,7 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import MakePicks from "./makePicks";
 import { useSession } from "next-auth/react";
-import { getCurrentWeek, getThisWeeksPickedGames, getAllGames } from "@/app/utils/db";
-import { getTeamStatisticsFromMsfWithStatus } from "@/app/lib/msf";
+import { getCurrentWeek, getThisWeeksPickedGames, getAllGames, getLatestTeamRecordSnapshot } from "@/app/utils/db";
 
 jest.mock("next-auth/react", () => ({
   useSession: jest.fn(),
@@ -13,17 +12,18 @@ jest.mock("@/app/utils/db", () => ({
   getCurrentWeek: jest.fn(),
   getThisWeeksPickedGames: jest.fn(),
   getAllGames: jest.fn(),
-}));
-
-jest.mock("@/app/lib/msf.js", () => ({
-  getTeamStatisticsFromMsfWithStatus: jest.fn(),
+  getLatestTeamRecordSnapshot: jest.fn(),
 }));
 
 jest.mock(
   "./makePicksForm",
   () =>
-    function MockMakePicksForm({ games }) {
-      return <div data-testid="make-picks-form">Form for {games.length} games</div>;
+    function MockMakePicksForm({ games, teamDetails }) {
+      return (
+        <div data-testid="make-picks-form" data-team-count={teamDetails.length}>
+          Form for {games.length} games
+        </div>
+      );
     },
 );
 
@@ -40,26 +40,26 @@ function deferred() {
 describe("MakePicks incremental loading", () => {
   let weekRequest;
   let picksRequest;
-  let teamRequest;
+  let teamRecordsRequest;
   let seasonRequest;
 
   beforeEach(() => {
     jest.clearAllMocks();
     weekRequest = deferred();
     picksRequest = deferred();
-    teamRequest = deferred();
+    teamRecordsRequest = deferred();
     seasonRequest = deferred();
     useSession.mockReturnValue({ data: { user: { name: "TestUser" } }, status: "authenticated" });
     getCurrentWeek.mockReturnValue(weekRequest.promise);
     getThisWeeksPickedGames.mockReturnValue(picksRequest.promise);
-    getTeamStatisticsFromMsfWithStatus.mockReturnValue(teamRequest.promise);
+    getLatestTeamRecordSnapshot.mockReturnValue(teamRecordsRequest.promise);
     getAllGames.mockReturnValue(seasonRequest.promise);
   });
 
-  it("shows picks before standings resolve and reports the external failure", async () => {
+  it("keeps picks usable when this season has no local team-record snapshot", async () => {
     render(<MakePicks />);
 
-    expect(screen.getByText("Get team records from MySportsFeeds")).toBeInTheDocument();
+    expect(screen.getByText("Load local team-record snapshot")).toBeInTheDocument();
     await act(async () => {
       picksRequest.resolve(
         JSON.stringify([
@@ -72,15 +72,15 @@ describe("MakePicks incremental loading", () => {
     });
 
     expect(await screen.findByTestId("make-picks-form")).toHaveTextContent("Form for 1 games");
-    expect(screen.getByText("Get team records from MySportsFeeds").parentElement).toHaveTextContent("Loading");
+    expect(screen.getByText("Load local team-record snapshot").parentElement).toHaveTextContent("Loading");
 
     await act(async () => {
       weekRequest.resolve({ week: 3, season: 2026 });
     });
-    await waitFor(() => expect(getTeamStatisticsFromMsfWithStatus).toHaveBeenCalledWith({ week: 3, season: 2026 }));
+    await waitFor(() => expect(getLatestTeamRecordSnapshot).toHaveBeenCalledWith(2026));
 
     await act(async () => {
-      teamRequest.resolve({ data: [], source: "unavailable" });
+      teamRecordsRequest.resolve(null);
       seasonRequest.resolve([]);
     });
 
@@ -88,7 +88,20 @@ describe("MakePicks incremental loading", () => {
       "aria-expanded",
       "true",
     );
-    expect(screen.getByText("Get team records from MySportsFeeds").parentElement).toHaveTextContent("Failed");
+    expect(screen.getByText("Load local team-record snapshot").parentElement).toHaveTextContent("Failed");
+    expect(screen.getByRole("status")).toHaveTextContent("Picks can still be submitted");
     expect(screen.getByTestId("make-picks-form")).toBeInTheDocument();
+  });
+
+  it("passes the local snapshot teams into pick entry", async () => {
+    getCurrentWeek.mockResolvedValue({ week: 3, season: 2026 });
+    getThisWeeksPickedGames.mockResolvedValue(JSON.stringify([{ _id: "game-1", userChoices: [] }]));
+    getLatestTeamRecordSnapshot.mockResolvedValue({ teams: [{ _id: 1, wins: 1 }] });
+    getAllGames.mockResolvedValue([]);
+
+    render(<MakePicks />);
+
+    await waitFor(() => expect(getLatestTeamRecordSnapshot).toHaveBeenCalledWith(2026));
+    expect(await screen.findByTestId("make-picks-form")).toHaveAttribute("data-team-count", "1");
   });
 });

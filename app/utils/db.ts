@@ -4,6 +4,11 @@ import { User, Game, UserChoice, WeekConfig } from "../../types";
 import { auth } from "../../auth";
 import { isAdminEmail } from "../lib/admin";
 import { isDebugEnabled, logDebug, logError, logInfo } from "../lib/logger";
+import {
+  SeasonTeamRecordSnapshots,
+  validateWeeklyTeamRecordSnapshot,
+} from "../lib/teamRecordSnapshots";
+import { createNpcChoices } from "../lib/npcChoices";
 
 const uri =
   process.env.MONGODB_URI ||
@@ -57,55 +62,6 @@ export const getCurrentWeek = async (): Promise<{ week: number; season: number }
   return { week: week!.week, season: Number(week!.season) };
 };
 
-export const updateCurrentWeek = async (newWeekOrConfig: number | WeekConfig) => {
-  const session = await auth();
-  if (!isAdminEmail(session?.user?.email)) {
-    throw new Error("You are not authorized to change the current week.");
-  }
-
-  const newWeek = typeof newWeekOrConfig === "number" ? newWeekOrConfig : newWeekOrConfig.week;
-  const newSeason = typeof newWeekOrConfig === "number" ? undefined : Number(newWeekOrConfig.season);
-  const lastWeeksPicks: Game[] = JSON.parse(await getThisWeeksPickedGames());
-  const client = await connectToDatabase();
-  const db: Db = client.db(process.env.MONGODB_DB || "picks");
-
-  await Promise.all(
-    lastWeeksPicks.map(async (game) => {
-      if (!game.userChoices?.some((choice) => choice.userId === "Homer")) {
-        await homerChoice(game, db);
-      }
-      if (!game.userChoices?.some((choice) => choice.userId === "Jackie")) {
-        await jackieChoice(game, db);
-      }
-      if (!game.userChoices?.some((choice) => choice.userId === "Freddy")) {
-        await freddyChoice(game, db);
-      }
-      if (!game.userChoices?.some((choice) => choice.userId === "Underdog")) {
-        await underdogChoice(game, db);
-      }
-      if (!game.userChoices?.some((choice) => choice.userId === "Robbie")) {
-        await robbieChoice(game, db);
-      }
-      if (!game.userChoices?.some((choice) => choice.userId === "Sammy")) {
-        await sammyChoice(game, db);
-      }
-    })
-  );
-
-  const updatedWeek = await db.collection("currentWeek").updateOne(
-    {},
-    { $set: newSeason === undefined ? { week: newWeek } : { week: newWeek, season: newSeason } }
-  );
-  if (updatedWeek.modifiedCount > 0) {
-    logInfo("week.changed", {
-      week: newWeek,
-      ...(newSeason === undefined ? {} : { season: newSeason }),
-      ...(session.user?.name ? { userId: session.user.name } : {}),
-    });
-  }
-  await client.close();
-  return updatedWeek;
-};
 export const updateGameInDb = async (game: Game) => {
   const client = await connectToDatabase();
   const db: Db = client.db(process.env.MONGODB_DB || "picks");
@@ -140,6 +96,46 @@ export const getAllGames = async (season: number): Promise<WithId<Game>[]> => {
   await client.close();
   return games;
 };
+
+export const getLatestTeamRecordSnapshot = async (season: number) => {
+  if (!Number.isInteger(season) || season < 1900 || season > 2200) {
+    throw new Error("A valid season is required to load team records.");
+  }
+
+  const client = await connectToDatabase();
+  try {
+    const db: Db = client.db(process.env.MONGODB_DB || "picks");
+    const stored = await db.collection<SeasonTeamRecordSnapshots>("teamRecordSnapshots").findOne({ _id: season });
+    if (!stored) {
+      return null;
+    }
+    if (Number(stored.season) !== season) {
+      throw new Error(`Stored team records do not match season ${season}.`);
+    }
+    if (!Array.isArray(stored.weeks)) {
+      throw new Error(`Stored team records for season ${season} have an invalid weekly history.`);
+    }
+    if (!stored.weeks.length) return null;
+
+    const seenWeeks = new Set<number>();
+    for (const snapshot of stored.weeks) {
+      if (!Number.isInteger(snapshot.week) || snapshot.week < 1 || snapshot.week > 22 || seenWeeks.has(snapshot.week)) {
+        throw new Error(`Stored team records for season ${season} have an invalid or duplicate week.`);
+      }
+      seenWeeks.add(snapshot.week);
+    }
+    const latest = [...stored.weeks]
+      .sort((first, second) => second.week - first.week)[0];
+    const snapshot = validateWeeklyTeamRecordSnapshot(latest);
+
+    return {
+      season,
+      ...snapshot,
+    };
+  } finally {
+    await client.close();
+  }
+}
 
 export async function connectToDatabase(): Promise<MongoClient> {
   const options: any = {};
@@ -186,7 +182,9 @@ export async function addGames(games: Game[]) {
           game.season = season;
           const insertResult = await db.collection<Game>("games").insertOne(game);
           if (insertResult.acknowledged) {
-            await npcChoices(game, db);
+            await Promise.all(
+              createNpcChoices(game).map((choice) => db.collection<UserChoice>("userChoices").insertOne(choice)),
+            );
           }
         } finally {
           await client.close();
@@ -198,57 +196,6 @@ export async function addGames(games: Game[]) {
     logError("games.add_failed", error, { gameCount: games.length, week: week.week, season });
     throw error;
   }
-}
-
-async function freddyChoice(game: Game, db: Db) {
-  await db
-    .collection<UserChoice>("userChoices")
-    .insertOne({ gameId: game._id as any, userId: "Freddy", choice: "ff", selectionTime: new Date().toISOString() });
-}
-async function underdogChoice(game: Game, db: Db) {
-  await db
-    .collection<UserChoice>("userChoices")
-    .insertOne({ gameId: game._id as any, userId: "Underdog", choice: "uu", selectionTime: new Date().toISOString() });
-}
-async function sammyChoice(game: Game, db: Db) {
-  await db
-    .collection<UserChoice>("userChoices")
-    .insertOne({ gameId: game._id as any, userId: "Sammy", choice: "uf", selectionTime: new Date().toISOString() });
-}
-async function homerChoice(game: Game, db: Db) {
-  await db.collection<UserChoice>("userChoices").insertOne({
-    gameId: game._id as any,
-    userId: "Homer",
-    choice: game.awayFavorite ? "uu" : "ff",
-    selectionTime: new Date().toISOString(),
-  });
-}
-async function jackieChoice(game: Game, db: Db) {
-  await db.collection<UserChoice>("userChoices").insertOne({
-    gameId: game._id as any,
-    userId: "Jackie",
-    choice: game.awayFavorite ? "ff" : "uu",
-    selectionTime: new Date().toISOString(),
-  });
-}
-async function robbieChoice(game: Game, db: Db) {
-  const choices: UserChoice['choice'][] = game.spread === 0.5 ? ["ff", "uu"] : ["ff", "uf", "uu"];
-  const randomChoice = choices[Math.floor(Math.random() * choices.length)];
-  await db.collection<UserChoice>("userChoices").insertOne({
-    gameId: game._id as any,
-    userId: "Robbie",
-    choice: randomChoice,
-    selectionTime: new Date().toISOString(),
-  });
-}
-
-async function npcChoices(game: Game, db: Db) {
-  await freddyChoice(game, db);
-  await underdogChoice(game, db);
-  await sammyChoice(game, db);
-  await homerChoice(game, db);
-  await jackieChoice(game, db);
-  await robbieChoice(game, db);
 }
 
 export async function addUserChoices(choices: UserChoice[]) {

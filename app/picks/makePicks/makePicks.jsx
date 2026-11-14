@@ -1,10 +1,9 @@
 "use client";
-import { getCurrentWeek, getThisWeeksPickedGames, getAllGames } from "@/app/utils/db";
+import { getCurrentWeek, getThisWeeksPickedGames, getAllGames, getLatestTeamRecordSnapshot } from "@/app/utils/db";
 
 import MakePicksForm from "./makePicksForm";
 import { useSession, signIn } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
-import { getTeamStatisticsFromMsfWithStatus } from "@/app/lib/msf.js";
 import { SeasonStatisticsProvider } from "@/app/context/SeasonStatistics";
 import {
   Accordion,
@@ -20,7 +19,7 @@ import { CancelOutlined, CheckCircleOutlined, ExpandMore, RemoveCircleOutlined }
 const INITIAL_CALL_STATUSES = [
   { key: "week", label: "Check the current week and season", status: "loading" },
   { key: "picks", label: "Load this week's games and saved picks", status: "loading" },
-  { key: "teams", label: "Get team records from MySportsFeeds", status: "loading" },
+  { key: "teams", label: "Load local team-record snapshot", status: "loading" },
   { key: "season", label: "Load season game history", status: "loading" },
 ];
 
@@ -28,6 +27,7 @@ export default function MakePicks() {
   const { data: session, status } = useSession();
   const [games, setGames] = useState(null);
   const [teamDetails, setTeamDetails] = useState([]);
+  const [teamRecordsMessage, setTeamRecordsMessage] = useState("");
   const [seasonData, setSeasonData] = useState([]);
   const [loadError, setLoadError] = useState(null);
   const [callStatuses, setCallStatuses] = useState(INITIAL_CALL_STATUSES);
@@ -74,14 +74,17 @@ export default function MakePicks() {
         if (!isCurrent) return;
         setCallStatus("week", "success");
 
-        void getTeamStatisticsFromMsfWithStatus(week)
+        void getLatestTeamRecordSnapshot(week.season)
           .then((result) => {
             if (!isCurrent) return;
-            setTeamDetails(result.data || []);
-            setCallStatus("teams", result.source === "unavailable" ? "failed" : "success");
+            setTeamDetails(result?.teams || []);
+            setTeamRecordsMessage(result ? "" : "Team records are not available for this season. Picks can still be submitted.");
+            setCallStatus("teams", result ? "success" : "failed");
           })
           .catch((error) => {
-            console.error("Error loading MSF team standings:", error);
+            console.error("Error loading local team-record snapshot:", error);
+            if (!isCurrent) return;
+            setTeamRecordsMessage("Team records could not be loaded. Picks can still be submitted.");
             setCallStatus("teams", "failed");
           });
 
@@ -176,9 +179,12 @@ export default function MakePicks() {
       ) : games === null ? (
         <Skeleton />
       ) : games.length > 0 ? (
-        <SeasonStatisticsProvider value={{ seasonData }}>
-          <MakePicksForm games={games} teamDetails={teamDetails} />
-        </SeasonStatisticsProvider>
+        <>
+          {teamRecordsMessage && <div role="status">{teamRecordsMessage}</div>}
+          <SeasonStatisticsProvider value={{ seasonData }}>
+            <MakePicksForm games={games} teamDetails={teamDetails} />
+          </SeasonStatisticsProvider>
+        </>
       ) : (
         <div>No games found</div>
       )}

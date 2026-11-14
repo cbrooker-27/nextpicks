@@ -3,6 +3,7 @@ import {
   getGamesForWeekFromMsf,
   getTeamStatisticsFromMsf,
   getTeamStatisticsFromMsfWithStatus,
+  fetchTeamRecordsForSnapshot,
   getThisWeeksGamesFromMsf,
 } from "./msf";
 import * as dbUtils from "@/app/utils/db";
@@ -144,6 +145,43 @@ describe("msf.js", () => {
     expect(teams).toHaveLength(1);
     expect(teams[0]._id).toBe(10);
     expect(teams[0].wins).toBe(10);
+  });
+
+  it("blocks for and validates the complete team set before reporting a snapshot fetch", async () => {
+    const teams = Array.from({ length: 32 }, (_value, index) => ({
+      team: { id: index + 1 },
+      stats: { standings: { wins: 1, losses: 0, ties: 0, pointsFor: 20, pointsAgainst: 10 } },
+    }));
+    fetch.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      json: async () => ({ teams }),
+    });
+
+    await expect(fetchTeamRecordsForSnapshot({ season: 2025, week: 9 })).resolves.toHaveLength(32);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "https://api.mysportsfeeds.com/v2.1/pull/nfl/2025-2026-regular/standings.json?stats=W,L,T,PF,PA",
+      expect.objectContaining({ method: "GET", signal: expect.any(AbortSignal) }),
+    );
+    expect(recordMsfRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ requestType: "team_stats", status: "success", season: 2025, week: 9, resultCount: 32 }),
+    );
+  });
+
+  it("rejects incomplete snapshot responses instead of returning partial records", async () => {
+    fetch.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      json: async () => ({ teams: [{ team: { id: 1 }, stats: { standings: {} } }] }),
+    });
+
+    await expect(fetchTeamRecordsForSnapshot({ season: 2025, week: 9 })).rejects.toThrow(
+      "Unable to retrieve a complete team-record snapshot",
+    );
+    expect(recordMsfRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ requestType: "team_stats", status: "error", season: 2025, week: 9 }),
+    );
   });
 
   it("logs each team statistics request and its successful result", async () => {

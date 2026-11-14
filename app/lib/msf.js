@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { getCurrentWeek } from "@/app/utils/db";
 import { recordMsfRequest, recordPendingMsfRequest } from "@/app/lib/msfTeamStatsMetrics";
 import { logDebug } from "@/app/lib/logger";
+import { normalizeMsfTeamRecords } from "@/app/lib/teamRecordSnapshots";
 
 const MAX_MSF_TIMEOUT_MS = 7000;
 const MAX_MSF_DIAGNOSTIC_TIMEOUT_MS = 50000;
@@ -345,6 +346,52 @@ export async function getTeamStatisticsFromMsfWithStatus(week) {
 export async function getTeamStatisticsFromMsf(week) {
   const result = await getTeamStatisticsFromMsfWithStatus(week);
   return result.data;
+}
+
+export async function fetchTeamRecordsForSnapshot(week) {
+  const startedAt = Date.now();
+  const requestId = randomUUID();
+  let httpStatus;
+
+  try {
+    const msfUrl = `${process.env.MYSPORTSFEED_BASE_URL}${week.season}-${
+      week.season + 1
+    }-regular/standings.json?stats=W,L,T,PF,PA`;
+    logDebug("msf_team_stats_snapshot_request", {
+      season: week.season,
+      week: week.week,
+      timeoutMs: getMsfDiagnosticTimeoutMs(),
+      status: "started",
+      requestId,
+    });
+    const { response, data } = await fetchFromMsf(msfUrl, getMSFHeaders(), getMsfDiagnosticTimeoutMs());
+    httpStatus = response.status;
+    const teams = normalizeMsfTeamRecords(data);
+    await logMsfRequest({
+      requestType: "team_stats",
+      week,
+      startedAt,
+      status: "success",
+      httpStatus,
+      resultCount: teams.length,
+      requestId,
+    });
+    return teams;
+  } catch (error) {
+    const status = error instanceof Error && error.name === "TimeoutError" ? "timeout" : "error";
+    await logMsfRequest({
+      requestType: "team_stats",
+      week,
+      startedAt,
+      status,
+      httpStatus: error instanceof Error ? error.status ?? httpStatus : httpStatus,
+      error,
+      requestId,
+    });
+    throw new Error(`Unable to retrieve a complete team-record snapshot for week ${week.week}, season ${week.season}.`, {
+      cause: error,
+    });
+  }
 }
 
 function getNumericLine(line) {

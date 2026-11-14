@@ -2,6 +2,8 @@ import { auth } from "../../../auth";
 import { isAdminEmail } from "@/app/lib/admin";
 import ChangeWeek from "./changeWeek";
 
+export const maxDuration = 60;
+
 export default async function ChangeWeekPage() {
   const session = await auth();
   if (!isAdminEmail(session?.user?.email)) {

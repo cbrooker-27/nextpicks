@@ -1,6 +1,7 @@
 /** @jest-environment node */
 import { auth } from "../../auth";
-import { updateCurrentWeek, updateGameScoresInDb } from "./db";
+import { updateCurrentWeek } from "../serverActions/teamRecordSnapshots";
+import { updateGameScoresInDb } from "./db";
 
 jest.mock("../../auth", () => ({
   auth: jest.fn(),
