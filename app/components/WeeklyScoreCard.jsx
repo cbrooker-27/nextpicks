@@ -134,7 +134,12 @@ export default function WeeklyScoreCard({
     </Card>
   ) : (
     <Card>
-      <CardMedia component="img" height="240" image="/static/images/loading/fred_tabulating.gif" alt="loading stats" />
+      <CardMedia
+        component="img"
+        height="240"
+        image={`/static/images/loading/fred_${currentWeek ? "tabulating" : "counting"}.gif`}
+        alt={`Calculating week ${week.week} score`}
+      />
       <CardContent>
         <Typography variant="body2" sx={{ color: "text.secondary" }}>
           Calculating week {week.week} score...

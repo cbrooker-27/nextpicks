@@ -22,6 +22,26 @@ describe("WeeklyScoreCard", () => {
   it("renders loading state when userStats is empty", () => {
     render(<WeeklyScoreCard userName="TestUser" week={{ week: 1, season: 2025 }} userStats={[]} />);
     expect(screen.getByText("Calculating week 1 score...")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Calculating week 1 score" })).toHaveAttribute(
+      "src",
+      "/static/images/loading/fred_counting.gif",
+    );
+  });
+
+  it("uses the tabulating image for the current week's loading card", () => {
+    render(
+      <WeeklyScoreCard
+        userName="TestUser"
+        week={{ week: 2, season: 2025 }}
+        userStats={[]}
+        currentWeek
+      />,
+    );
+
+    expect(screen.getByRole("img", { name: "Calculating week 2 score" })).toHaveAttribute(
+      "src",
+      "/static/images/loading/fred_tabulating.gif",
+    );
   });
 
   it("renders score information correctly", () => {
