@@ -28,6 +28,7 @@ describe("StandingsLineChart", () => {
       expect.objectContaining({ label: "Beta", data: [1, 1, 2] }),
     ]);
     expect(chartProps.xAxis).toEqual([{ scaleType: "point", data: ["W1", "W2", "W3"] }]);
+    expect(chartProps.yAxis).toEqual([{ min: 0, label: "Points" }]);
   });
 
   it("limits the chart to the top users and configured completed weeks", () => {
@@ -45,5 +46,17 @@ describe("StandingsLineChart", () => {
     const chartProps = LineChart.mock.calls[0][0];
     expect(chartProps.series).toEqual([expect.objectContaining({ label: "Top", data: [5] })]);
     expect(chartProps.xAxis[0].data).toEqual(["W1"]);
+    expect(chartProps.yAxis[0].min).toBe(4);
+  });
+
+  it("uses zero as the minimum when every weekly score is zero", () => {
+    render(
+      <StandingsLineChart
+        maxWeek={2}
+        userStats={[{ name: "Alpha", totalPoints: 0, week1: 0, week2: 0 }]}
+      />,
+    );
+
+    expect(LineChart.mock.calls[0][0].yAxis[0].min).toBe(0);
   });
 });

@@ -20,6 +20,8 @@ export default function StandingsLineChart({ userStats = [], maxWeek = 0, maxSer
       },
     };
   });
+  const nonZeroPoints = series.flatMap(({ data }) => data.filter((value) => Number.isFinite(value) && value > 0));
+  const yAxisMin = nonZeroPoints.length ? Math.min(...nonZeroPoints) - 1 : 0;
 
   return (
     <Box sx={{ mb: 2 }}>
@@ -29,7 +31,7 @@ export default function StandingsLineChart({ userStats = [], maxWeek = 0, maxSer
       <LineChart
         series={series}
         xAxis={[{ scaleType: "point", data: Array.from({ length: maxWeek }, (_, i) => `W${i + 1}`) }]}
-        yAxis={[{ min: 0, label: "Points" }]}
+        yAxis={[{ min: yAxisMin, label: "Points" }]}
         height={420}
         // tooltip
       />
