@@ -72,7 +72,6 @@ export default function ResponsiveDrawer(props) {
           itemname: "Previous Weeks",
           icon: EventRepeat,
           target: "/picks/previousWeeks",
-          disabled: true,
         },
         {
           itemname: "Analytics",

@@ -1,0 +1,45 @@
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 1rem;
+  margin-bottom: 1rem;
+}
+
+.tableContainer {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  min-width: max-content;
+}
+
+.table th:not(.weekHeader),
+.table td {
+  min-width: 7rem;
+}
+
+.weekHeader {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 8rem;
+  background-color: #fff;
+}
+
+.currentWeekRow > * {
+  background-color: #f3f6fb;
+}
+
+.currentWeekRow .weekHeader {
+  background-color: #f3f6fb;
+}
+
+.progressChip {
+  margin-left: 0.5rem;
+}
+
+.weekLink {
+  color: inherit;
+}

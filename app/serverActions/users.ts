@@ -32,6 +32,7 @@ export async function getUserStatsForStandings(week: { week: number; season: num
     activeUsers.forEach((user: { [x: string]: number; }) => {
       user["week" + i] = 0;
       user["weekLive" + i] = 0;
+      user["weekInProgress" + i] = 0;
       user["possiblePoints" + i] = 0;
       user["adminPointsWeek" + i] = 0;
       user["adminPicksWeek" + i] = 0;
@@ -43,6 +44,11 @@ export async function getUserStatsForStandings(week: { week: number; season: num
             game.awayScore = gameData.awayScore;
             game.homeScore = gameData.homeScore;
             game.playedStatus = gameData.playedStatus;
+        }
+        if (!game.playedStatus.startsWith("COMPLETED")) {
+          activeUsers.forEach((user: { [x: string]: number; }) => {
+            user["weekInProgress" + i] = 1;
+          });
         }
       let gamePoints = [];
       const favScore = game.awayFavorite ? game.awayScore : game.homeScore;

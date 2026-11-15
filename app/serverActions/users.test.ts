@@ -118,4 +118,42 @@ describe('getUserStatsForStandings', () => {
       adminPicksWeek2: 0
     });
   });
+
+  it('marks a week in progress while keeping live-game points out of completed scores', async () => {
+    const mockActiveUsers = [{ name: 'Player' }];
+    (dbUtils.getThisYearsActiveUsers as jest.Mock).mockResolvedValue(JSON.stringify(mockActiveUsers));
+    const mockPickedGames = [
+      {
+        _id: 1,
+        week: 1,
+        awayFavorite: true,
+        awayScore: 0,
+        homeScore: 0,
+        spread: 3,
+        playedStatus: 'UNPLAYED',
+        userChoices: [{ userId: 'Player', choice: 'ff' }]
+      },
+      {
+        _id: 2,
+        week: 1,
+        awayFavorite: true,
+        awayScore: 0,
+        homeScore: 0,
+        spread: 3,
+        playedStatus: 'UNPLAYED',
+        userChoices: [{ userId: 'Player', choice: 'ff' }]
+      }
+    ];
+    (dbUtils.getAllPickedGames as jest.Mock).mockResolvedValue(JSON.stringify(mockPickedGames));
+    (msfUtils.getGamesForWeekFromMsf as jest.Mock).mockResolvedValue([
+      { _id: 1, awayScore: 30, homeScore: 20, playedStatus: 'COMPLETED' },
+      { _id: 2, awayScore: 14, homeScore: 10, playedStatus: 'LIVE' }
+    ]);
+
+    const stats = await getUserStatsForStandings({ season: 2025, week: 1 }, true);
+
+    expect(stats[0].week1).toBe(2);
+    expect(stats[0].weekLive1).toBe(2);
+    expect(stats[0].weekInProgress1).toBe(1);
+  });
 });
