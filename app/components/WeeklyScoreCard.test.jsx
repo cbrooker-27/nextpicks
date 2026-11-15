@@ -20,12 +20,25 @@ describe("WeeklyScoreCard", () => {
   const mockUserStats = [{ name: "TestUser", week1: 10, possiblePoints1: 16 }];
 
   it("renders loading state when userStats is empty", () => {
+    jest.spyOn(Math, "random").mockReturnValue(0);
     render(<WeeklyScoreCard userName="TestUser" week={{ week: 1, season: 2025 }} userStats={[]} />);
     expect(screen.getByText("Calculating week 1 score...")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Calculating week 1 score" })).toHaveAttribute(
       "src",
       "/static/images/loading/fred_counting.gif",
     );
+    jest.restoreAllMocks();
+  });
+
+  it("randomly chooses among the counting images for a previous-week loading card", () => {
+    jest.spyOn(Math, "random").mockReturnValue(0.99);
+    render(<WeeklyScoreCard userName="TestUser" week={{ week: 1, season: 2025 }} userStats={[]} />);
+
+    expect(screen.getByRole("img", { name: "Calculating week 1 score" })).toHaveAttribute(
+      "src",
+      "/static/images/loading/launchpad-counting.gif",
+    );
+    jest.restoreAllMocks();
   });
 
   it("uses the tabulating image for the current week's loading card", () => {

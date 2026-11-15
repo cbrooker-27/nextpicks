@@ -1,10 +1,19 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Card, CardActions, Button, CardContent, Typography, CardMedia, Chip, Box } from "@mui/material";
 import { useSeasonStatistics } from "../context/SeasonStatistics";
 import Slider from "@mui/material/Slider";
 import { useRouter } from "next/navigation";
+
+const COUNTING_IMAGES = [
+  "fred_counting.gif",
+  "fred_tabulating.gif",
+  "genie-counting.gif",
+  "hercules-counting.gif",
+  "joey-counting.gif",
+  "launchpad-counting.gif",
+];
 
 /**
  * WeeklyScoreCard
@@ -26,6 +35,15 @@ export default function WeeklyScoreCard({
 }) {
   const router = useRouter();
   const seasonStatistics = useSeasonStatistics();
+  const loadingImageRef = useRef(null);
+
+  useEffect(() => {
+    if (!currentWeek && loadingImageRef.current) {
+      const randomIndex = Math.floor(Math.random() * COUNTING_IMAGES.length);
+      loadingImageRef.current.src = `/static/images/loading/${COUNTING_IMAGES[randomIndex]}`;
+    }
+  }, [currentWeek]);
+
   const { points, possiblePoints, leader, positionDisplay, positionNumber, medalEmoji, isLive } = useMemo(() => {
     const userStat = userStats.find((u) => u.name === userName);
     const pts = userStat ? userStat["week" + week.week] : 0;
@@ -135,6 +153,7 @@ export default function WeeklyScoreCard({
   ) : (
     <Card>
       <CardMedia
+        ref={loadingImageRef}
         component="img"
         height="240"
         image={`/static/images/loading/fred_${currentWeek ? "tabulating" : "counting"}.gif`}
