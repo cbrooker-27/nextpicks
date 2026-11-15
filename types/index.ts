@@ -34,6 +34,17 @@ export interface UserChoice {
   adminOverride?: boolean;
 }
 
+export interface PickEditHistoryEvent {
+  _id?: ObjectId | string;
+  userId: string;
+  gameId: ObjectId | string | number;
+  season: number;
+  week: number;
+  previousChoice: UserChoice["choice"];
+  newChoice: UserChoice["choice"];
+  changedAt: Date;
+}
+
 export interface WeekConfig {
   _id?: ObjectId | string;
   week: number;

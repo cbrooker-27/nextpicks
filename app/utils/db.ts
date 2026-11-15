@@ -4,6 +4,7 @@ import { User, Game, UserChoice, WeekConfig } from "../../types";
 import { auth } from "../../auth";
 import { isAdminEmail } from "../lib/admin";
 import { isDebugEnabled, logDebug, logError, logInfo } from "../lib/logger";
+import { saveUserChoicesWithHistory } from "../lib/pickEditHistory";
 import {
   SeasonTeamRecordSnapshots,
   validateWeeklyTeamRecordSnapshot,
@@ -211,33 +212,7 @@ export async function addUserChoices(choices: UserChoice[]) {
   const client = await connectToDatabase();
   try {
     const db: Db = client.db(process.env.MONGODB_DB || "picks");
-    const gameIds = choices.map((choice) => choice.gameId);
-    const games = await db
-      .collection<Game>("games")
-      .find({ _id: { $in: gameIds as any[] } })
-      .project({ _id: 1, startTime: 1, week: 1, season: 1 })
-      .toArray();
-    const gamesById = new Map(games.map((game) => [String(game._id), game]));
-
-    for (const choice of choices) {
-      const game = gamesById.get(String(choice.gameId));
-      if (!game) {
-        throw new Error(`Game ${choice.gameId} was not found.`);
-      }
-      if (new Date(game.startTime).getTime() <= Date.now()) {
-        throw new Error(`Game ${choice.gameId} has already started.`);
-      }
-    }
-
-    const operations = choices.map((choice) => ({
-      updateOne: {
-        filter: { gameId: choice.gameId, userId: choice.userId },
-        update: { $set: { choice: choice.choice, selectionTime: choice.selectionTime, adminOverride: false } },
-        upsert: true,
-      },
-    }));
-    const writeResult = await db.collection<UserChoice>("userChoices").bulkWrite(operations);
-    const periods = [...new Map(games.map((game) => [`${game.season}-${game.week}`, { season: game.season, week: game.week }])).values()];
+    const { writeResult, periods } = await saveUserChoicesWithHistory(db, client, choices, userId);
     logInfo("picks.saved", { userId, pickCount: choices.length, periods });
     return JSON.stringify(writeResult);
   } finally {

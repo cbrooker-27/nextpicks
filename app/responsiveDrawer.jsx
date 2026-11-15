@@ -22,6 +22,7 @@ import {
   Cottage,
   EditCalendar,
   EventRepeat,
+  History,
   Leaderboard,
   Park,
   People,
@@ -97,6 +98,11 @@ export default function ResponsiveDrawer(props) {
           itemname: "Admin Player Picks",
           icon: TaskAlt,
           target: "/admin/overridePicks",
+        },
+        {
+          itemname: "Pick Edit History",
+          icon: History,
+          target: "/admin/pickEditHistory",
         },
         {
           itemname: "Change Week",
